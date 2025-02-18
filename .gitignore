@@ -1,3 +1,13 @@
-/.venv
-/src
-/uv.lock
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.tox
+pyodide/
+src/react/node_modules/
