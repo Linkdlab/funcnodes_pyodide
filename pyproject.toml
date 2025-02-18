@@ -1,15 +1,27 @@
 [project]
 name = "funcnodes-pyodide"
-version = "0.1.1"
+version = "0.1.0"
 description = "Funcnodes in pyodide"
 readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    ]
 requires-python = ">=3.11"
+
 dependencies = [
+    "funcnodes>=0.5.35",
     "funcnodes-worker>=0.1.8",
 ]
 
 [dependency-groups]
-dev = []
+dev = [
+    "pytest>=8.3.4",
+]
+
+
+[project.license]
+text = "AGPL-3.0"
+
 
 
 [build-system]
