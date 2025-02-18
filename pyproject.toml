@@ -1,0 +1,23 @@
+[project]
+name = "funcnodes-pyodide"
+version = "0.1.1"
+description = "Funcnodes in pyodide"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "funcnodes-worker>=0.1.8",
+]
+
+[dependency-groups]
+dev = []
+
+
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
