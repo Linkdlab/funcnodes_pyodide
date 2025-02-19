@@ -1,6 +1,13 @@
 from .worker import PyodideWorker
 import asyncio
 
+import sys
+
+if sys.platform == "emscripten":
+    from .patch import patch
+
+    patch()
+
 
 async def new_worker(debug=False):
     worker = PyodideWorker(debug=debug)
