@@ -14,9 +14,7 @@ class PyodideWorker(RemoteWorker):
 
     async def sendmessage(self, msg: str, **kwargs):
         if self._receiver:
-            self._receiver.receivepy(msg)
+            self._receiver.receivepy(msg, worker_id=self.uuid())
 
     def set_receiver(self, res):
         self._receiver = res
-
-
