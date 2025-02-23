@@ -1,6 +1,6 @@
 [project]
 name = "funcnodes-pyodide"
-version = "0.1.2"
+version = "0.1.3"
 description = "Funcnodes in pyodide"
 readme = "README.md"
 classifiers = [

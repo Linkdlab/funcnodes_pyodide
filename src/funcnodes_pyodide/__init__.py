@@ -9,8 +9,8 @@ if sys.platform == "emscripten":
     patch()
 
 
-async def new_worker(debug=False):
-    worker = PyodideWorker(debug=debug)
+async def new_worker(*args, **kwargs):
+    worker = PyodideWorker(*args, **kwargs)
     loop = asyncio.get_event_loop()
     loop.create_task(worker.run_forever_async())
     return worker
