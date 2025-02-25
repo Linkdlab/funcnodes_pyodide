@@ -123,43 +123,48 @@ const bundleConfig={
   ],
 }
 
-// const bundleWorkerConf = {
-//   input: "src/pyodideWorker.mjs",
-//   plugins: [
-//     commonjs(),
-//     resolve({browser: true}),
-//     // production&&terser(),
-//   ],
-//   output:[
-//     {
-//       file: path.resolve(__dirname, "public","pyodideWorker.js"),
-//       format: "esm",
-//       sourcemap: true,
-//       assetFileNames: "[name][extname]",
-//     }
-//   ]
-// }
 
-const bundleSharedWorkerConf = {
-  input: "src/pyodideSharedWorker.mts",
-  plugins: [
+
+const commonWorkerConf = {
+  plugins:[
     typescript({
       resolveJsonModule: true,
       compilerOptions: { declaration: false }
   }),
     commonjs(),
     resolve({browser: true}),
-    // production&&terser(),
+    replace({
+      '__DEFAULT_PYODIDE_URL__': JSON.stringify("https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.mjs"),
+      preventAssignment: true,
+    }),
+    production&&terser(),
+    
+   
   ],
   output:[
     {
-      file: path.resolve(__dirname, "public","pyodideSharedWorker.js"),
+      dir: path.resolve(__dirname, "public",),
       format: "esm",
       sourcemap: true,
       assetFileNames: "[name][extname]",
+      plugins:[
+        // copy({
+        //   hook:"writeBundle",
+        //   targets: [
+        //     { src: [
+        //       // path.resolve(pyodideDir,'**',"*"),
+        //       // path.resolve(pyodideDir,"*")
+        //       "node_modules/pyodide/**/*",
+        //       "node_modules/pyodide/*",
+        //     ], dest:  path.resolve(__dirname, "public","assets","pyodide")  },
+        //   ]
+        // }),
+      ]
+
+      
     },
     {
-      file: path.resolve(__dirname, "dist","pyodideSharedWorker.js"),
+      dir: path.resolve(__dirname, "dist","worker"),
       format: "esm",
       sourcemap: true,
       assetFileNames: "[name][extname]",
@@ -167,11 +172,54 @@ const bundleSharedWorkerConf = {
   ]
 }
 
+const bundleSharedWorkerConf = {
+  input: "src/pyodideSharedWorker.mts",
+  plugins: commonWorkerConf.plugins,
+  output:commonWorkerConf.output
+}
+
+const bundleWorkerLogicConf = {
+  input: "src/pyodideWorkerLogic.mts",
+  plugins: commonWorkerConf.plugins,
+  output:commonWorkerConf.output
+}
+
+const bundleWorkerLayoutConf = {
+  input: "src/pyodideWorkerLayout.mts",
+  plugins: commonWorkerConf.plugins,
+  output:commonWorkerConf.output
+}
+
+const bundleDedicatedWorkerConf = {
+  input: "src/pyodideDedicatedWorker.mts",
+  plugins: commonWorkerConf.plugins,
+  output:commonWorkerConf.output
+}
+
+
+const dtsWorkerLayoutConfig={
+  input: bundleWorkerLayoutConf.input,
+  output: [{ dir: path.resolve(__dirname, "dist","worker"), format: "es" }],
+  external: [],
+  plugins: [dts()],
+};
+
+const dtsWorkerLogicConf={
+  input: bundleWorkerLogicConf.input,
+  output: [{ dir: path.resolve(__dirname, "dist","worker"), format: "es" }],
+  external: [],
+  plugins: [dts()],
+};
+
 export default [
   moduleConfig,
   dtsConfig,
   bundleConfig,
-  // bundleWorkerConf,
   bundleSharedWorkerConf,
+  bundleDedicatedWorkerConf,
+  bundleWorkerLogicConf,
+  bundleWorkerLayoutConf,
+  dtsWorkerLayoutConfig,
+  dtsWorkerLogicConf,
 ];
 
