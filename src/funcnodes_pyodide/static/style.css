@@ -12,6 +12,98 @@
   stroke: #11ff00;
 }
 
+.dialogoverlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  inset: 0;
+  animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2000;
+}
+
+.dialogconent {
+  background-color: var(--funcnodesbackground1);
+  border-radius: 6px;
+  box-shadow: var(--funheadercolor) 0px 10px 38px -10px, var(--funheadercolor) 0px 10px 20px -15px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 85vw;
+  max-height: 85vh;
+  padding: 25px;
+  animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--funcnodestextcolor1);
+  border: 1px solid var(--funheadercolor);
+  display: flex;
+  flex-direction: column;
+  z-index: 2001;
+}
+
+.dialogtitle {
+  margin: 0;
+  font-weight: 500;
+  color: var(--funheadercolor);
+  font-size: 17px;
+}
+
+.dialogdescription {
+  margin: 10px 0 20px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.dialogclosebutton {
+  border-radius: 100%;
+  height: 25px;
+  width: 25px;
+  display: inline-flex;
+  background-color: inherit;
+  align-items: center;
+  justify-content: center;
+  color: var(--funheadercolor);
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: none;
+}
+
+.dialogclosebutton:hover {
+  background-color: var(--funheadercolor);
+  color: var(--funcnodesbackground1);
+}
+
+.dialogclosebutton:active {
+  background-color: var(--funheadercolor);
+  color: var(--funcnodestextcolor1);
+}
+
+.dialogsendbutton {
+  background-color: var(--funcnodesbackground1);
+  color: var(--funheadercolor);
+  border: 1px solid var(--funheadercolor);
+  border-radius: 99rem;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 15px;
+  margin-top: 20px;
+}
+
+.dialogsendbutton:hover {
+  background-color: var(--funheadercolor);
+  color: var(--funcnodesbackground1);
+}
+
+.dialogsendbutton:active {
+  background-color: var(--funheadercolor);
+  color: var(--funcnodestextcolor1);
+}
+
+.dialogchildren {
+  margin-top: 20px;
+  overflow: auto;
+}
+
 :root {
   --expandtime: 0.3s;
   --libnodebgcolor: #48465f;
@@ -21,7 +113,7 @@
 .libcontainer {
   top: 0;
   left: 0;
-  height: 100%;
+  min-height: 100%;
   padding: 0.5rem;
   box-sizing: border-box;
   display: flex;
@@ -287,98 +379,6 @@
 
 .addable-module .toggle-description:hover {
   color: #0056b3;
-}
-
-.dialogoverlay {
-  background-color: rgba(0, 0, 0, 0.5);
-  position: fixed;
-  inset: 0;
-  animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 2000;
-}
-
-.dialogconent {
-  background-color: var(--funcnodesbackground1);
-  border-radius: 6px;
-  box-shadow: var(--funheadercolor) 0px 10px 38px -10px, var(--funheadercolor) 0px 10px 20px -15px;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90vw;
-  max-width: 85vw;
-  max-height: 85vh;
-  padding: 25px;
-  animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
-  color: var(--funcnodestextcolor1);
-  border: 1px solid var(--funheadercolor);
-  display: flex;
-  flex-direction: column;
-  z-index: 2001;
-}
-
-.dialogtitle {
-  margin: 0;
-  font-weight: 500;
-  color: var(--funheadercolor);
-  font-size: 17px;
-}
-
-.dialogdescription {
-  margin: 10px 0 20px;
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.dialogclosebutton {
-  border-radius: 100%;
-  height: 25px;
-  width: 25px;
-  display: inline-flex;
-  background-color: inherit;
-  align-items: center;
-  justify-content: center;
-  color: var(--funheadercolor);
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  border: none;
-}
-
-.dialogclosebutton:hover {
-  background-color: var(--funheadercolor);
-  color: var(--funcnodesbackground1);
-}
-
-.dialogclosebutton:active {
-  background-color: var(--funheadercolor);
-  color: var(--funcnodestextcolor1);
-}
-
-.dialogsendbutton {
-  background-color: var(--funcnodesbackground1);
-  color: var(--funheadercolor);
-  border: 1px solid var(--funheadercolor);
-  border-radius: 99rem;
-  padding: 10px 20px;
-  cursor: pointer;
-  font-size: 15px;
-  margin-top: 20px;
-}
-
-.dialogsendbutton:hover {
-  background-color: var(--funheadercolor);
-  color: var(--funcnodesbackground1);
-}
-
-.dialogsendbutton:active {
-  background-color: var(--funheadercolor);
-  color: var(--funcnodestextcolor1);
-}
-
-.dialogchildren {
-  margin-top: 20px;
-  overflow: auto;
 }
 
 /* this gets exported as style.css and can be used for the default theming */
@@ -869,14 +869,6 @@
   top: 100%;
 }
 
-.smooth-expand-expanded {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-}
-
 .basicstyleelement, .headermenucontent, .styled-select__menu, .styleelement, .styledcheckbox, .styledinput, .styledbtn, .styleddropdown {
   background-color: var(--funcnodesbackground1);
   color: var(--funcnodestextcolor1);
@@ -1015,6 +1007,14 @@ button {
   font-size: inherit;
 }
 
+.smooth-expand-expanded {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
 :root {
   --funheadercolor: #00d9ff;
   --funcnodesbackground1: hsl(243, 26%, 13%);
@@ -1022,6 +1022,7 @@ button {
   --funcnodesbackground_light: hsl(240, 22%, 38%);
   --containerboarderradius: 1rem;
   --funcnodestextcolor1: #ffffff;
+  --funcnodes-z-index: 1000;
 }
 
 .funcnodescontainer {
@@ -1037,6 +1038,8 @@ button {
 .funcnodesreactflowcontainer {
   width: 100%;
   height: 100%;
+  flex-grow: 1;
+  z-index: var(--funcnodes-z-index);
   background-color: var(--funcnodesbackground1);
   position: relative;
   display: flex;
@@ -1093,10 +1096,18 @@ button {
   position: absolute;
   right: 0;
   padding: 10px;
-  z-index: 1001;
+  z-index: 2;
   display: flex;
   flex-direction: row;
   margin-right: 10px;
+}
+
+.FuncnodesApp {
+  height: 100%;
+  width: 100%;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .funcnodesreactflowheader {
@@ -1107,7 +1118,7 @@ button {
   position: relative;
   top: 0;
   left: 0;
-  z-index: 1000;
+  z-index: 1;
 }
 
 .funcnodesreactflowheader .headerelement {
@@ -1174,13 +1185,13 @@ button {
 }
 
 .nodesettings_container {
-  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: row;
 }
 
 .nodesettings_expander {
-  height: 100%;
+  min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1214,92 +1225,6 @@ button {
   margin-bottom: 0.5rem;
   margin-left: 0.5rem;
   margin-top: 0.5rem;
-}
-
-.tablecontainer {
-  overflow: auto;
-  background-color: white;
-  min-height: 20rem;
-}
-
-.tableHead {
-  color: var(--funheadercolor) !important;
-  background-color: var(--funcnodesbackground1);
-  font-weight: bold !important;
-}
-
-.tableheadercolor {
-  color: inherit !important;
-  font-family: inherit !important;
-  font-weight: inherit !important;
-}
-
-.indexcol {
-  background-color: var(--funcnodesbackground2);
-  color: var(--funheadercolor) !important;
-  font-family: inherit !important;
-  font-weight: inherit !important;
-}
-
-.styled-select__control {
-  height: 100%;
-  min-height: initial;
-  min-width: 10px;
-}
-
-.styled-select__menu-list {
-  max-height: 200px;
-}
-
-.styled-select__single-value {
-  text-align: start;
-}
-
-.styled-select__option {
-  text-align: start;
-  padding: 2px 5px;
-}
-
-.styled-select__option:hover {
-  cursor: pointer;
-}
-
-.colorspace {
-  margin: 0.2rem;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-}
-
-.colorspace_title {
-  font-size: 0.7em;
-  font-weight: bold;
-}
-
-.colorspace label {
-  font-size: 0.7rem;
-}
-
-.colorspace input {
-  font-size: 0.7rem;
-  max-height: 0.7rem;
-}
-
-.colorspace input[type=range] {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  -webkit-appearance: none;
-  background-color: #666;
-  height: 0.7rem;
-  border-radius: 5px;
-}
-
-.colorspace input[type=range]::-webkit-slider-thumb, .colorspace input[type=range]::-webkit-range-thumb, .colorspace input[type=range]::-moz-range-thumb {
-  width: 0.7rem;
-  height: 0.7rem;
-  background-color: #cc1c1c;
-  border-radius: 50%;
-  cursor: pointer;
 }
 
 :root {
@@ -1598,6 +1523,92 @@ input.nodedatainput.styledinput,
   background-color: #b7f50c;
   border-radius: 3px;
   transition: width 0.3s ease;
+}
+
+.styled-select__control {
+  height: 100%;
+  min-height: initial;
+  min-width: 10px;
+}
+
+.styled-select__menu-list {
+  max-height: 200px;
+}
+
+.styled-select__single-value {
+  text-align: start;
+}
+
+.styled-select__option {
+  text-align: start;
+  padding: 2px 5px;
+}
+
+.styled-select__option:hover {
+  cursor: pointer;
+}
+
+.tablecontainer {
+  overflow: auto;
+  background-color: white;
+  min-height: 20rem;
+}
+
+.tableHead {
+  color: var(--funheadercolor) !important;
+  background-color: var(--funcnodesbackground1);
+  font-weight: bold !important;
+}
+
+.tableheadercolor {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-weight: inherit !important;
+}
+
+.indexcol {
+  background-color: var(--funcnodesbackground2);
+  color: var(--funheadercolor) !important;
+  font-family: inherit !important;
+  font-weight: inherit !important;
+}
+
+.colorspace {
+  margin: 0.2rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.colorspace_title {
+  font-size: 0.7em;
+  font-weight: bold;
+}
+
+.colorspace label {
+  font-size: 0.7rem;
+}
+
+.colorspace input {
+  font-size: 0.7rem;
+  max-height: 0.7rem;
+}
+
+.colorspace input[type=range] {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  -webkit-appearance: none;
+  background-color: #666;
+  height: 0.7rem;
+  border-radius: 5px;
+}
+
+.colorspace input[type=range]::-webkit-slider-thumb, .colorspace input[type=range]::-webkit-range-thumb, .colorspace input[type=range]::-moz-range-thumb {
+  width: 0.7rem;
+  height: 0.7rem;
+  background-color: #cc1c1c;
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 s slideUpAndFade from {
