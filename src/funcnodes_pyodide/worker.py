@@ -10,7 +10,7 @@ class PyodideWorker(RemoteWorker):
         self._receiver = None
 
     async def receivejs(self, msg):
-        await self.receive_message(json.loads(msg))
+        await self.receive_message(msg)
 
     async def sendmessage(self, msg: str, **kwargs):
         if self._receiver:

@@ -1,6 +1,6 @@
 [project]
 name = "funcnodes-pyodide"
-version = "0.1.4"
+version = "0.1.5"
 description = "Funcnodes in pyodide"
 readme = "README.md"
 classifiers = [
@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 
 dependencies = [
     "funcnodes>=0.5.35",
-    "funcnodes-worker>=0.1.8",
+    "funcnodes-worker>=0.2.5",
     "funcnodes_core>=0.3.30",
 ]
 
