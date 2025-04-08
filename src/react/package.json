@@ -1,6 +1,6 @@
 {
   "name": "@linkdlab/funcnodes_pyodide_react_flow",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": false,
   "description": "Frontend with React Flow for FuncNodes",
   "repository": {
@@ -31,7 +31,7 @@
     "@babel/core": "^7.26.9",
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.26.0",
-    "@linkdlab/funcnodes_react_flow": "^0.3.17",
+    "@linkdlab/funcnodes_react_flow": "^0.4.3",
     "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^28.0.2",
@@ -58,7 +58,7 @@
     "typescript": "^5.7.3"
   },
   "peerDependencies": {
-    "@linkdlab/funcnodes_react_flow": "^0.3.17",
+    "@linkdlab/funcnodes_react_flow": "^0.4.3",
     "pyodide": "^0.27.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
