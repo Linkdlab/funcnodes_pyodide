@@ -26,8 +26,19 @@ interface receivepyParams {
   worker_id: string;
 }
 
+interface receivepyBytesParams {
+  msg: Uint8Array;
+  worker_id: string;
+}
+
 type receivepyMsgType = string | receivepyParams;
 type receivepyKwargsType = Partial<receivepyParams> | string | undefined;
+
+type receivepyBytesMsgType = Uint8Array | receivepyBytesParams;
+type receivepyBytesKwargsType =
+  | Partial<receivepyBytesParams>
+  | string
+  | undefined;
 
 interface PyodideLogicGlobals {
   reset: () => Promise<void>;
@@ -43,13 +54,21 @@ interface PyodideLogicGlobals {
   get_or_create_worker: (id: string) => Promise<FuncNodesWorkerState>;
   initializeFuncNodesWorker: (uuid: string) => Promise<FuncNodesWorkerState>;
   receivepy: (msg: receivepyMsgType, worker_id: receivepyKwargsType) => void;
+  receivepy_bytes: (
+    msg: receivepyBytesMsgType,
+    worker_id: receivepyBytesKwargsType
+  ) => void;
   startInitialization: (params: startInitializationParams) => workerStateType;
   register_cmd_message: <T extends CommandMessage>(
     cmd: T["cmd"],
     handler: (msg: T) => Promise<any>
   ) => void;
   handleMessage: (message: Message) => Promise<Messageresponse>;
-  read_url_params: () => { debug: boolean; pyodide_url: string | undefined };
+  read_url_params: () => {
+    debug: boolean;
+    pyodide_url: string | undefined;
+    packages: string[];
+  };
   globalThis: PyodideLogicGlobals;
 }
 
@@ -59,6 +78,7 @@ interface workerStateType {
   pyodide: PyodideInterface | null;
   micropip: anymicropip;
   pyodide_url: string;
+  packages: string[];
   worker: { [key: string]: FuncNodesWorkerState };
   pyodideReady: boolean;
   pyodideReadyPromise: Promise<{
@@ -68,6 +88,7 @@ interface workerStateType {
   debug: boolean;
   interruptBuffer: Uint8Array<SharedArrayBuffer> | null;
   receivepy: (msg: string, worker_id: string) => void;
+  receivepy_bytes: (msg: Uint8Array, worker_id: string) => void;
   handel_register: {
     [key: string]: (msg: CommandMessage) => Promise<any>;
   };
@@ -77,6 +98,7 @@ interface workerStateType {
 globalThis.workerState = {
   pyodide: null,
   pyodide_url: __DEFAULT_PYODIDE_URL__,
+  packages: [],
   micropip: null,
   worker: {},
   pyodideReady: false,
@@ -84,6 +106,7 @@ globalThis.workerState = {
   debug: false,
   interruptBuffer: null,
   receivepy: (_msg: any, _worker_id: string) => void 0,
+  receivepy_bytes: (_msg: any, _worker_id: string) => void 0,
   handel_register: {},
   post_pyodide_ready: undefined,
 };
@@ -124,13 +147,15 @@ globalThis.initializePyodide = async (): Promise<{
     console.debug("Loading Pyodide module...");
     const pyodideModule = await import(globalThis.workerState.pyodide_url);
     console.debug("Loading Pyodide instance...");
-    const loadPyodide = pyodideModule.loadPyodide as typeof loadPyodideType;
 
+    const loadPyodide = pyodideModule.loadPyodide as typeof loadPyodideType;
     // index url is the folder of workerState.pyodide_url (which points to .../pyodide.mjs)
     const indexURL = globalThis.workerState.pyodide_url
       .split("/")
       .slice(0, -1)
       .join("/");
+    console.log(indexURL);
+
     globalThis.workerState.pyodide = await (
       loadPyodide as typeof loadPyodideType
     )({
@@ -150,6 +175,12 @@ globalThis.initializePyodide = async (): Promise<{
   }
 
   console.debug("Pyodide ready. Installing funcnodes...");
+  for (const pkg of globalThis.workerState.packages) {
+    console.log("Installing package:", pkg);
+    await globalThis.workerState.micropip.install(pkg);
+  }
+  await globalThis.workerState.micropip.install("funcnodes");
+  await globalThis.workerState.micropip.install("funcnodes-worker");
   await globalThis.workerState.micropip.install("funcnodes-pyodide");
   console.debug("Importing funcnodes...");
   await globalThis.workerState.pyodide.runPythonAsync(
@@ -192,7 +223,9 @@ globalThis.has_worker = (id: string): boolean => {
 
 globalThis.get_or_create_worker = async (id: string) => {
   if (!id) throw new Error("Worker id is required");
+
   if (!globalThis.workerState.worker[id]) {
+    console.log("Creating worker with id", id);
     await globalThis.initializeFuncNodesWorker(id);
   }
   return globalThis.get_worker(id);
@@ -252,7 +285,6 @@ globalThis.receivepy = (msg: receivepyMsgType, kwargs: receivepyKwargsType) => {
     if (typeof data.msg !== "string") {
       data.msg = JSON.stringify(data.msg);
     }
-
     if (kwargs !== undefined) {
       if (typeof kwargs === "string") {
         if (!data.worker_id) {
@@ -285,22 +317,71 @@ globalThis.receivepy = (msg: receivepyMsgType, kwargs: receivepyKwargsType) => {
   }
 };
 
+globalThis.receivepy_bytes = (
+  msg: receivepyBytesMsgType,
+  kwargs: receivepyBytesKwargsType
+) => {
+  msg = (msg as unknown as any).toJs();
+  try {
+    let data: Partial<receivepyBytesParams> = {};
+    if (msg instanceof Uint8Array) {
+      data.msg = msg;
+    } else {
+      data = msg;
+    }
+
+    if (data.msg === undefined) return;
+
+    if (kwargs !== undefined) {
+      if (typeof kwargs === "string") {
+        if (!data.worker_id) {
+          data.worker_id = kwargs;
+        }
+      } else {
+        data = { ...kwargs, ...data };
+      }
+    }
+
+    const worker_id = data.worker_id;
+    if (!worker_id) {
+      throw new Error(`Worker id not provided in receivepy_bytes`);
+      return;
+    }
+    if (!globalThis.workerState.worker[worker_id]) {
+      throw new Error(
+        `Worker with id ${worker_id} not found in receivepy_bytes`
+      );
+      return;
+    }
+    globalThis.workerState.receivepy_bytes(msg as Uint8Array, worker_id);
+  } catch (e) {
+    console.error("Error during receivepy_bytes:", e);
+    return;
+  }
+};
+
 interface startInitializationParams {
   debug: boolean;
   receivepy: (msg: string, worker_id: string) => void;
+  receivepy_bytes: (msg: Uint8Array, worker_id: string) => void;
   pyodide_url?: string;
+  packages: string[];
   post_pyodide_ready?: (workerState: workerStateType) => Promise<void>;
 }
 
 globalThis.startInitialization = ({
   debug = false,
   receivepy,
+  receivepy_bytes,
   pyodide_url,
   post_pyodide_ready,
+  packages,
 }: startInitializationParams): workerStateType => {
   globalThis.workerState.debug = debug;
   globalThis.workerState.pyodide_url = pyodide_url || __DEFAULT_PYODIDE_URL__;
+  globalThis.workerState.packages = packages;
   globalThis.workerState.receivepy = receivepy;
+  globalThis.workerState.receivepy_bytes = receivepy_bytes;
   globalThis.workerState.pyodideReadyPromise = globalThis.initializePyodide();
   globalThis.workerState.post_pyodide_ready = post_pyodide_ready;
   return globalThis.workerState;
@@ -355,6 +436,18 @@ globalThis.register_cmd_message("ping", async (_msg: PingMessage) => {
   return "pong";
 });
 
+globalThis.register_cmd_message("_eval", async (msg: CommandMessage) => {
+  try {
+    const res = await globalThis.workerState.pyodide?.runPythonAsync(
+      msg.msg || "print('No code provided')"
+    );
+    console.log("Eval result:", res);
+    return res;
+  } catch (e) {
+    console.error("Error during _eval:", e);
+  }
+});
+
 globalThis.register_cmd_message("state", async (_msg: StateMessage) => {
   return { state: { loaded: globalThis.workerState.pyodideReady } };
 });
@@ -365,6 +458,7 @@ globalThis.register_cmd_message("worker:state", async (msg: WorkerMessage) => {
 });
 
 globalThis.register_cmd_message("worker:stop", async (msg: WorkerMessage) => {
+  if (!globalThis.has_worker(msg.worker_id)) return;
   const worker = await globalThis.get_or_create_worker(msg.worker_id);
   if (worker.worker) {
     worker.worker.stop();
@@ -410,7 +504,6 @@ globalThis.handleMessage = async (message: Message) => {
         response.result = await globalThis.workerState.handel_register[
           cmdmessage.cmd
         ](cmdmessage);
-        return response;
       } else {
         throw new Error("Unknown command: " + cmdmessage.cmd);
       }
@@ -420,6 +513,7 @@ globalThis.handleMessage = async (message: Message) => {
   } catch (error: any) {
     response.error = error.message;
   }
+
   return response;
 };
 
@@ -428,9 +522,17 @@ globalThis.read_url_params = () => {
   const params = new URLSearchParams(self.location.search);
   const debug = params.get("debug")?.toLowerCase() === "true";
   const pyodide_url = params.get("pyodide_url") || undefined;
+  const packages = params.get("packages")?.split(",") || [];
 
-  console.log("Debug:", debug, "Pyodide URL:", pyodide_url);
-  return { debug, pyodide_url };
+  console.log(
+    "Debug:",
+    debug,
+    "Pyodide URL:",
+    pyodide_url,
+    "Packages:",
+    packages
+  );
+  return { debug, pyodide_url, packages };
 };
 
 export default globalThis;

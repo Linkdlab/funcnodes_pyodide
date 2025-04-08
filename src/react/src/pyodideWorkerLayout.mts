@@ -29,6 +29,7 @@ interface WorkerInitParams {
 
 interface FullInitParams extends WorkerInitParams {
   receivepy: (msg: string, worker_id: string) => void;
+  receivepy_bytes: (msg: Uint8Array, worker_id: string) => void;
 }
 interface DedicatedWorkerInitParams extends WorkerInitParams {}
 interface SharedWorkerInitParams extends WorkerInitParams {}
@@ -65,6 +66,14 @@ globaleSlfDedicated.init_dedicated_worker = (
       // Broadcast the message to every connected port
       globaleSlf.postMessage({ cmd: "receive", msg, worker_id: worker_id });
     },
+    receivepy_bytes(msg: Uint8Array, worker_id: string) {
+      // Broadcast the message to every connected port
+      globaleSlf.postMessage({
+        cmd: "receive_bytes",
+        msg: msg,
+        worker_id: worker_id,
+      });
+    },
   };
 
   globaleSlf.general_initalization(full_params);
@@ -97,6 +106,16 @@ globaleSlfShared.init_shared_worker = (params: SharedWorkerInitParams) => {
       // Broadcast the message to every connected port
       globaleSlf.connectedPorts.forEach((port) => {
         port.postMessage({ cmd: "receive", msg, worker_id: worker_id });
+      });
+    },
+    receivepy_bytes(msg: Uint8Array, worker_id: string) {
+      // Broadcast the message to every connected port
+      globaleSlf.connectedPorts.forEach((port) => {
+        port.postMessage({
+          cmd: "receive_bytes",
+          msg: msg,
+          worker_id: worker_id,
+        });
       });
     },
   };
