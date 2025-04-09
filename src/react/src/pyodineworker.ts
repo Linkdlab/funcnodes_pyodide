@@ -26,6 +26,7 @@ import { WorkerSendMessage } from "./pyodideWorkerLogic.mjs";
 export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   debug?: boolean;
   worker_url?: string;
+  worker_baseurl?: string;
   shared_worker?: boolean;
   worker?: Worker | SharedWorker;
   pyodide_url?: string;
@@ -40,12 +41,12 @@ export const worker_from_data = (
     if (data.shared_worker) {
       data.worker_url = new URL(
         "./pyodideSharedWorker.js",
-        import.meta.url
+        data.worker_baseurl || import.meta.url
       ).toString();
     } else {
       data.worker_url = new URL(
         "./pyodideDedicatedWorker.js",
-        import.meta.url
+        data.worker_baseurl || import.meta.url
       ).toString();
     }
   }
