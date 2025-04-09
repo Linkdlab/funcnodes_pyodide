@@ -38,9 +38,15 @@ export const worker_from_data = (
   if (data.worker) return data.worker;
   if (data.worker_url === undefined) {
     if (data.shared_worker) {
-      data.worker_url = new URL("./pyodideSharedWorker.js", import.meta.url);
+      data.worker_url = new URL(
+        "./pyodideSharedWorker.js",
+        import.meta.url
+      ).toString();
     } else {
-      data.worker_url = new URL("./pyodideDedicatedWorker.js", import.meta.url);
+      data.worker_url = new URL(
+        "./pyodideDedicatedWorker.js",
+        import.meta.url
+      ).toString();
     }
   }
   let paramurl = `${data.worker_url}`;
