@@ -30,9 +30,6 @@ const moduleConfig = {
     warn(warning)
   },
   plugins: [
-    string({
-      include: '**/worker/*.js'
-    }),
     typescript({
     resolveJsonModule: true,
     compilerOptions: { declaration: false }
@@ -106,16 +103,6 @@ const bundleConfig={
       'global': 'window',
       preventAssignment: true,
     }),
-    // production &&
-    //     copy({
-    //       targets: [
-    //         {
-    //           src: "public/esm/**/*",
-    //           dest: "../funcnodes_pyodide/static/esm",
-    //         },
-    //       ],
-    //       hook: "writeBundle",
-    //     })
   ].filter(Boolean),
   output: [
     {
@@ -124,13 +111,6 @@ const bundleConfig={
       sourcemap: true,
       assetFileNames: "[name][extname]",
     },
-    // {
-    //   dir: path.resolve(__dirname, "public","esm"),
-    //   format: "esm",
-    //   sourcemap: true,
-    //   assetFileNames: "[name][extname]",
-    //   preserveModules: true,
-    // },
   ],
 }
 
