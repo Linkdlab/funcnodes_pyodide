@@ -123,8 +123,6 @@ const bundleConfig={
   ],
 }
 
-
-
 const commonWorkerConf = {
   plugins:[
     typescript({
@@ -137,9 +135,12 @@ const commonWorkerConf = {
       '__DEFAULT_PYODIDE_URL__': JSON.stringify("https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.mjs"),
       preventAssignment: true,
     }),
-    production&&terser(),
-    
-   
+    production&&terser(), 
+    copy({
+      targets: [
+        { src: 'src/pyodideWorker.mjs', dest: path.dirname( path.resolve(__dirname, pkg.module))  },
+      ]
+    }),
   ],
   output:[
     {
@@ -159,7 +160,17 @@ const commonWorkerConf = {
         //     ], dest:  path.resolve(__dirname, "public","assets","pyodide")  },
         //   ]
         // }),
-      ]
+        production &&
+        copy({
+          targets: [
+            {
+              src: "public/*.{js,js.map,css}",
+              dest: "../funcnodes_pyodide/static",
+            },
+          ],
+          hook: "writeBundle",
+        }),
+      ].filter(Boolean),
 
       
     },

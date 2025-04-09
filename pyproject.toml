@@ -1,6 +1,6 @@
 [project]
 name = "funcnodes-pyodide"
-version = "0.1.6"
+version = "0.1.7"
 description = "Funcnodes in pyodide"
 readme = "README.md"
 classifiers = [
@@ -16,7 +16,9 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "build>=1.2.2.post1",
     "pytest>=8.3.4",
+    "pytest-asyncio>=0.26.0",
 ]
 
 

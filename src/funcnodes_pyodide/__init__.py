@@ -13,4 +13,6 @@ async def new_worker(*args, **kwargs):
     worker = PyodideWorker(*args, **kwargs)
     loop = asyncio.get_event_loop()
     loop.create_task(worker.run_forever_async())
+    while worker.runstate != "running":
+        await asyncio.sleep(0.1)
     return worker
