@@ -28,6 +28,8 @@ interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   worker_url: string;
   shared_worker?: boolean;
   worker?: Worker | SharedWorker;
+  pyodide_url?: string;
+  packages?: string[];
 }
 
 class FuncnodesPyodideWorker extends FuncNodesWorker {
@@ -44,7 +46,13 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       ..._data,
     };
     super(data);
-    const paramurl = `${data.worker_url}?debug=${data.debug}`;
+    let paramurl = `${data.worker_url}?debug=${data.debug}`;
+    if (data.pyodide_url) {
+      paramurl += `&pyodide_url=${data.pyodide_url}`;
+    }
+    if (data.packages) {
+      paramurl += `&packages=${data.packages.join(",")}`;
+    }
 
     if (data.worker) {
       if (data.worker instanceof SharedWorker) {
@@ -110,6 +118,8 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
   }
 
   postMessage(data: any) {
+    data.worker_id = this.uuid;
+
     if (this._port) {
       this._port.postMessage(data);
     } else {
@@ -144,8 +154,75 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
         }
         if (event.data.worker_id === this.uuid)
           this.receive(JSON.parse(event.data.msg));
+      } else if (event.data.cmd === "receive_bytes") {
+        if (event.data.worker_id === undefined) {
+          throw new Error("worker_id is undefined");
+        }
+        if (event.data.worker_id === this.uuid) this.onbytes(event.data.msg);
       }
     }
+  }
+
+  async upload_file({
+    files: files,
+    onProgressCallback: _onProgressCallback,
+    root: root,
+  }: {
+    files: File[] | FileList;
+    onProgressCallback?: (loaded: number, total?: number) => void;
+    root?: string;
+  }): Promise<string> {
+    const promises: Promise<string>[] = [];
+    const total = files.length;
+    let loaded = 0;
+    if (files.length === 0) {
+      return "";
+    }
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const reader = new FileReader();
+      const promise = new Promise<string>((resolve, reject) => {
+        reader.onload = async (event) => {
+          try {
+            const data = (
+              (event.target as FileReader).result as string
+            )?.replace(/^data:.+;base64,/, "");
+            const subtarget = file.webkitRelativePath || file.name;
+            const target = root ? `${root}/${subtarget}` : subtarget;
+            const ans = await this._send_cmd({
+              cmd: "upload",
+              kwargs: { data: data, filename: target },
+              wait_for_response: true,
+            });
+            loaded++;
+            if (_onProgressCallback) {
+              _onProgressCallback(loaded, total);
+            }
+            resolve(ans);
+          } catch (e) {
+            reject(e);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+      promises.push(promise);
+    }
+    const fileresults = await Promise.all(promises);
+    // get common root
+    const common_root = fileresults.reduce((acc, val) => {
+      const split = val.split("/");
+      const split_acc = acc.split("/");
+      const common = [];
+      for (let i = 0; i < split.length; i++) {
+        if (split[i] === split_acc[i]) {
+          common.push(split[i]);
+        } else {
+          break;
+        }
+      }
+      return common.join("/");
+    }, fileresults[0]);
+    return common_root;
   }
 }
 

@@ -28,9 +28,14 @@ const FuncNodesRenderer = (
         }
       : { element: id_or_element, eleid: id_or_element.id };
 
-  createRoot(element).render(
-    <FuncNodes {...options} id={options.id || eleid} />
-  );
+  const content = <FuncNodes {...options} id={options.id || eleid} />;
+
+  const root = createRoot(element);
+  root.render(content);
+  return {
+    root,
+    content,
+  };
 };
 
 window.FuncNodes = FuncNodesRenderer;

@@ -11,3 +11,6 @@ wheels/
 .tox
 pyodide/
 src/react/node_modules/
+/dev
+/src/react/public
+/.vscode
