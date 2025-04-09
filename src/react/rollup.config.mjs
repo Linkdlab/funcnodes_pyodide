@@ -67,13 +67,7 @@ const moduleConfig = {
       format: "esm",
       sourcemap: true,
       assetFileNames: "[name][extname]",
-      plugins: [
-        copy({
-          targets: [
-            { src: 'src/pyodideWorker.mjs', dest: path.dirname( path.resolve(__dirname, pkg.module))  },
-          ]
-        }),
-      ],
+      plugins: [],
     },
     {
       file:  path.resolve(__dirname,pkg.main),
