@@ -50,15 +50,15 @@ export const worker_from_data = (
       ).toString();
     }
   }
-  let paramurl = `${data.worker_url}`;
+  let paramurl = new URL(`${data.worker_url}`);
   if (data.debug !== undefined) {
-    paramurl += `&debug=${data.debug}`;
+    paramurl.searchParams.set("debug", data.debug ? "true" : "false");
   }
   if (data.pyodide_url) {
-    paramurl += `&pyodide_url=${data.pyodide_url}`;
+    paramurl.searchParams.set("pyodide_url", data.pyodide_url);
   }
   if (data.packages) {
-    paramurl += `&packages=${data.packages.join(",")}`;
+    paramurl.searchParams.set("packages", data.packages.join(","));
   }
 
   if (data.shared_worker) {

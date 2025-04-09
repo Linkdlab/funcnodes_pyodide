@@ -112,7 +112,17 @@ const bundleConfig={
       'global': 'window',
       preventAssignment: true,
     }),
-  ],
+    // production &&
+    //     copy({
+    //       targets: [
+    //         {
+    //           src: "public/esm/**/*",
+    //           dest: "../funcnodes_pyodide/static/esm",
+    //         },
+    //       ],
+    //       hook: "writeBundle",
+    //     })
+  ].filter(Boolean),
   output: [
     {
       file: path.resolve(__dirname, "public","index.js"),
@@ -120,6 +130,13 @@ const bundleConfig={
       sourcemap: true,
       assetFileNames: "[name][extname]",
     },
+    // {
+    //   dir: path.resolve(__dirname, "public","esm"),
+    //   format: "esm",
+    //   sourcemap: true,
+    //   assetFileNames: "[name][extname]",
+    //   preserveModules: true,
+    // },
   ],
 }
 
