@@ -60,7 +60,7 @@ const moduleConfig = {
     }),
     
     production&&terser(),
-  ],
+  ].filter(Boolean),
 
   output: [
     {file: path.resolve(__dirname, pkg.module),
