@@ -153,7 +153,7 @@ const commonWorkerConf = {
         { src: 'src/pyodideWorker.mjs', dest: path.dirname( path.resolve(__dirname, pkg.module))  },
       ]
     }),
-  ],
+  ].filter(Boolean),
   output:[
     {
       dir: path.resolve(__dirname, "public",),
