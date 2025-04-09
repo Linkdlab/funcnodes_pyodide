@@ -29,7 +29,11 @@ const moduleConfig = {
     }
     warn(warning)
   },
-  plugins: [typescript({
+  plugins: [
+    string({
+      include: '**/worker/*.js'
+    }),
+    typescript({
     resolveJsonModule: true,
     compilerOptions: { declaration: false }
 }),
@@ -43,10 +47,6 @@ const moduleConfig = {
     }),
     resolve({browser: true,}),
     json(),
-    string({
-      // Required to be specified
-      include: ["src/pyodideWorker.mjs"]
-    }),
     scssloader({
       fileName: "style.css",
       sass: sass,
@@ -125,6 +125,7 @@ const bundleConfig={
 
 const commonWorkerConf = {
   plugins:[
+    
     typescript({
       resolveJsonModule: true,
       compilerOptions: { declaration: false }
@@ -160,6 +161,7 @@ const commonWorkerConf = {
         //     ], dest:  path.resolve(__dirname, "public","assets","pyodide")  },
         //   ]
         // }),
+        
         production &&
         copy({
           targets: [
@@ -171,15 +173,14 @@ const commonWorkerConf = {
           hook: "writeBundle",
         }),
       ].filter(Boolean),
-
-      
     },
     {
       dir: path.resolve(__dirname, "dist","worker"),
       format: "esm",
       sourcemap: true,
       assetFileNames: "[name][extname]",
-    }
+    },
+   
   ]
 }
 
@@ -223,14 +224,14 @@ const dtsWorkerLogicConf={
 };
 
 export default [
-  moduleConfig,
-  dtsConfig,
-  bundleConfig,
   bundleSharedWorkerConf,
   bundleDedicatedWorkerConf,
   bundleWorkerLogicConf,
   bundleWorkerLayoutConf,
   dtsWorkerLayoutConfig,
   dtsWorkerLogicConf,
+  moduleConfig,
+  dtsConfig,
+  bundleConfig, //neds to be last for worker code injection
 ];
 
