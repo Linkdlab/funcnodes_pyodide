@@ -33,9 +33,54 @@ export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   packages?: string[];
 }
 
-export const worker_from_data = (
+const getUsableWorkerURL = async (
+  worker_url: string | URL,
+  { useBlob = true }: { useBlob: boolean }
+): Promise<string> => {
+  // if url is a string, convert it to a URL object
+
+  const workerUrlString = worker_url.toString();
+
+  // IF the URL is not absolute or contains the same origin, we can use it directly
+
+  if (
+    !workerUrlString.includes("://") ||
+    workerUrlString.includes(window.location.origin)
+  ) {
+    // The same origin - Worker will run fine
+    return workerUrlString;
+  }
+
+  const type = "application/javascript";
+
+  // If the URL is absolute, we need to fetch it and create a blob URL
+  // to use it in the worker
+  const data = await fetch(worker_url);
+  const datatext = await data.text();
+  const workerPath = new URL(workerUrlString).href.split("/");
+  workerPath.pop(); // remove the last part of the URL
+
+  const importScriptsFix = `const _importScripts = importScripts;
+  const _fixImports = (url) => new URL(url, '${
+    workerPath.join("/") + "/"
+  }').href;
+  importScripts = (...urls) => _importScripts(...urls.map(_fixImports));`;
+
+  let finalURL =
+    `data:${type},` + encodeURIComponent(importScriptsFix + datatext);
+
+  if (useBlob) {
+    finalURL = URL.createObjectURL(
+      new Blob([`importScripts("${finalURL}")`], { type })
+    );
+  }
+
+  return finalURL;
+};
+
+export const worker_from_data = async (
   data: FuncnodesPyodideWorkerProps
-): Worker | SharedWorker => {
+): Promise<Worker | SharedWorker> => {
   if (data.worker) return data.worker;
   if (data.worker_url === undefined) {
     if (data.shared_worker) {
@@ -50,7 +95,9 @@ export const worker_from_data = (
       ).toString();
     }
   }
-  let paramurl = new URL(`${data.worker_url}`);
+  let paramurl = new URL(
+    await getUsableWorkerURL(`${data.worker_url}`, { useBlob: true })
+  );
   if (data.debug !== undefined) {
     paramurl.searchParams.set("debug", data.debug ? "true" : "false");
   }
@@ -77,7 +124,7 @@ export const worker_from_data = (
 };
 
 class FuncnodesPyodideWorker extends FuncNodesWorker {
-  _worker: Worker | SharedWorker;
+  _worker: Worker | SharedWorker | undefined;
   initPromise: Promise<void>;
   _workerstate: {
     loaded: boolean;
@@ -90,18 +137,20 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       ..._data,
     };
     super(data);
-    this._worker = worker_from_data(data);
-    if (this._worker instanceof SharedWorker) {
-      data.shared_worker = true;
-      this._port = this._worker.port;
-      this._port.start(); // Ensure the port is active
-      this._port.addEventListener("message", this.onmessage.bind(this));
-    } else if (this._worker instanceof Worker) {
-      data.shared_worker = false;
-      this._worker.addEventListener("message", this.onmessage.bind(this));
-    } else {
-      throw new Error("worker must be an instance of Worker or SharedWorker");
-    }
+    worker_from_data(data).then((worker) => {
+      this._worker = worker;
+      if (this._worker instanceof SharedWorker) {
+        data.shared_worker = true;
+        this._port = this._worker.port;
+        this._port.start(); // Ensure the port is active
+        this._port.addEventListener("message", this.onmessage.bind(this));
+      } else if (this._worker instanceof Worker) {
+        data.shared_worker = false;
+        this._worker.addEventListener("message", this.onmessage.bind(this));
+      } else {
+        throw new Error("worker must be an instance of Worker or SharedWorker");
+      }
+    });
 
     setInterval(() => {
       this.postMessage({ cmd: "state" });
