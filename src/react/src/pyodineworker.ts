@@ -23,14 +23,51 @@ import { WorkerSendMessage } from "./pyodideWorkerLogic.mjs";
 //   return pyiodide_worker;
 // };
 
-interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
+export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   debug?: boolean;
-  worker_url: string;
+  worker_url?: string;
   shared_worker?: boolean;
   worker?: Worker | SharedWorker;
   pyodide_url?: string;
   packages?: string[];
 }
+
+export const worker_from_data = (
+  data: FuncnodesPyodideWorkerProps
+): Worker | SharedWorker => {
+  if (data.worker) return data.worker;
+  if (data.worker_url === undefined) {
+    if (data.shared_worker) {
+      data.worker_url = new URL("./pyodideSharedWorker.js", import.meta.url);
+    } else {
+      data.worker_url = new URL("./pyodideDedicatedWorker.js", import.meta.url);
+    }
+  }
+  let paramurl = `${data.worker_url}`;
+  if (data.debug !== undefined) {
+    paramurl += `&debug=${data.debug}`;
+  }
+  if (data.pyodide_url) {
+    paramurl += `&pyodide_url=${data.pyodide_url}`;
+  }
+  if (data.packages) {
+    paramurl += `&packages=${data.packages.join(",")}`;
+  }
+
+  if (data.shared_worker) {
+    data.worker = new SharedWorker(paramurl, {
+      type: "module",
+      name: data.uuid,
+    });
+
+    // Example: regularly ask for state updates
+  } else {
+    data.worker = new Worker(paramurl, {
+      type: "module",
+    });
+  }
+  return data.worker;
+};
 
 class FuncnodesPyodideWorker extends FuncNodesWorker {
   _worker: Worker | SharedWorker;
@@ -46,44 +83,17 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       ..._data,
     };
     super(data);
-    let paramurl = `${data.worker_url}?debug=${data.debug}`;
-    if (data.pyodide_url) {
-      paramurl += `&pyodide_url=${data.pyodide_url}`;
-    }
-    if (data.packages) {
-      paramurl += `&packages=${data.packages.join(",")}`;
-    }
-
-    if (data.worker) {
-      if (data.worker instanceof SharedWorker) {
-        data.shared_worker = true;
-      } else if (data.worker instanceof Worker) {
-        data.shared_worker = false;
-      } else {
-        throw new Error("worker must be an instance of Worker or SharedWorker");
-      }
-    }
-
-    if (data.shared_worker) {
-      if (!data.worker) {
-        data.worker = new SharedWorker(paramurl, {
-          type: "module",
-          name: data.uuid,
-        });
-      }
-      this._worker = data.worker as SharedWorker;
+    this._worker = worker_from_data(data);
+    if (this._worker instanceof SharedWorker) {
+      data.shared_worker = true;
       this._port = this._worker.port;
       this._port.start(); // Ensure the port is active
       this._port.addEventListener("message", this.onmessage.bind(this));
-      // Example: regularly ask for state updates
-    } else {
-      if (!data.worker) {
-        data.worker = new Worker(paramurl, {
-          type: "module",
-        });
-      }
-      this._worker = data.worker as Worker;
+    } else if (this._worker instanceof Worker) {
+      data.shared_worker = false;
       this._worker.addEventListener("message", this.onmessage.bind(this));
+    } else {
+      throw new Error("worker must be an instance of Worker or SharedWorker");
     }
 
     setInterval(() => {
