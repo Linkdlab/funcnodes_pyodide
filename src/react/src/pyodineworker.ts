@@ -96,7 +96,7 @@ export const worker_from_data = async (
     }
   }
   let paramurl = new URL(
-    await getUsableWorkerURL(`${data.worker_url}`, { useBlob: false })
+    await getUsableWorkerURL(`${data.worker_url}`, { useBlob: true })
   );
   if (data.debug !== undefined) {
     paramurl.searchParams.set("debug", data.debug ? "true" : "false");
