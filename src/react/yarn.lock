@@ -487,10 +487,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@linkdlab/funcnodes_react_flow@^0.4.5":
-  version "0.4.5"
-  resolved "https://registry.yarnpkg.com/@linkdlab/funcnodes_react_flow/-/funcnodes_react_flow-0.4.5.tgz#97b59e3dcdbbe2d34b1b3c84661d573517941860"
-  integrity sha512-Jm6s8eH3ckzBI+YjVJWfeczqp1MDv+diVJIKpR6H8A7IdTNxwukEK38MehFzp6ggAVYaq8X5QUcqZ3YliFdKrQ==
+"@linkdlab/funcnodes_react_flow@^0.4.6":
+  version "0.4.6"
+  resolved "https://registry.yarnpkg.com/@linkdlab/funcnodes_react_flow/-/funcnodes_react_flow-0.4.6.tgz#de6dada3d761479bbe6d2650a53afafe44517da8"
+  integrity sha512-whEY5vtcp0VU312i3FdUbJF/SCKUfQd3prmIOI4gRlui2x4ox0BNypu/qG+1UwiFfVVnd6BVvaZcOfoMUvhU+A==
   dependencies:
     "@emotion/react" "^11.14.0"
     "@emotion/styled" "^11.14.0"
