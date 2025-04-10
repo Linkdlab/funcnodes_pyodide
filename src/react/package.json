@@ -1,6 +1,6 @@
 {
   "name": "@linkdlab/funcnodes_pyodide_react_flow",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "private": false,
   "description": "Frontend with React Flow for FuncNodes",
   "repository": {
