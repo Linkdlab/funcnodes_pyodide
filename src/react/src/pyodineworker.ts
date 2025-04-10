@@ -1,6 +1,10 @@
 import { FuncNodesWorker, WorkerProps } from "@linkdlab/funcnodes_react_flow";
 import { v4 as uuidv4 } from "uuid";
 import { WorkerSendMessage } from "./pyodideWorkerLogic.mjs";
+
+import pyodideDedicatedWorker from "./pyodideDedicatedWorker.mts?worker";
+import pyodideSharedWorker from "./pyodideSharedWorker.mts?worker";
+
 // @ts-ignore
 // import workerScript from "./pyodideWorker.mjs";
 
@@ -23,20 +27,58 @@ import { WorkerSendMessage } from "./pyodideWorkerLogic.mjs";
 //   return pyiodide_worker;
 // };
 
-interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
+export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   debug?: boolean;
-  worker_url: string;
+  worker_url?: string;
+  worker_baseurl?: string;
   shared_worker?: boolean;
   worker?: Worker | SharedWorker;
   pyodide_url?: string;
   packages?: string[];
 }
 
+export const worker_from_data = (
+  data: FuncnodesPyodideWorkerProps
+): Worker | SharedWorker => {
+  if (data.worker) return data.worker;
+
+  if (data.shared_worker) {
+    if (data.worker_url === undefined) {
+      data.worker = new pyodideSharedWorker({
+        name: data.uuid,
+      });
+    } else {
+      data.worker = new SharedWorker(data.worker_url, {
+        name: data.uuid,
+        type: "module",
+      });
+    }
+  } else {
+    if (data.worker_url === undefined) {
+      data.worker = new pyodideDedicatedWorker({
+        name: data.uuid,
+      });
+    } else {
+      data.worker = new Worker(data.worker_url, {
+        name: data.uuid,
+        type: "module",
+      });
+    }
+    // data.worker = new Worker(paramurl, {
+    //   type: "module",
+    // });
+  }
+
+  return data.worker;
+};
+
 class FuncnodesPyodideWorker extends FuncNodesWorker {
-  _worker: Worker | SharedWorker;
+  _worker: Worker | SharedWorker | undefined;
   initPromise: Promise<void>;
   _workerstate: {
     loaded: boolean;
+    msg: string;
+    progress: number;
   };
   _port: MessagePort | undefined;
   _message_hooks: ((data: any) => Promise<void>)[] = [];
@@ -46,55 +88,38 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       ..._data,
     };
     super(data);
-    let paramurl = `${data.worker_url}?debug=${data.debug}`;
-    if (data.pyodide_url) {
-      paramurl += `&pyodide_url=${data.pyodide_url}`;
-    }
-    if (data.packages) {
-      paramurl += `&packages=${data.packages.join(",")}`;
-    }
-
-    if (data.worker) {
-      if (data.worker instanceof SharedWorker) {
-        data.shared_worker = true;
-      } else if (data.worker instanceof Worker) {
-        data.shared_worker = false;
-      } else {
-        throw new Error("worker must be an instance of Worker or SharedWorker");
-      }
-    }
-
-    if (data.shared_worker) {
-      if (!data.worker) {
-        data.worker = new SharedWorker(paramurl, {
-          type: "module",
-          name: data.uuid,
-        });
-      }
-      this._worker = data.worker as SharedWorker;
+    this._worker = worker_from_data(data);
+    if (this._worker instanceof SharedWorker) {
+      data.shared_worker = true;
       this._port = this._worker.port;
       this._port.start(); // Ensure the port is active
       this._port.addEventListener("message", this.onmessage.bind(this));
-      // Example: regularly ask for state updates
-    } else {
-      if (!data.worker) {
-        data.worker = new Worker(paramurl, {
-          type: "module",
-        });
-      }
-      this._worker = data.worker as Worker;
+    } else if (this._worker instanceof Worker) {
+      data.shared_worker = false;
       this._worker.addEventListener("message", this.onmessage.bind(this));
+    } else {
+      throw new Error("worker must be an instance of Worker or SharedWorker");
     }
 
-    setInterval(() => {
-      this.postMessage({ cmd: "state" });
-    }, 1000);
+    this.postMessage({
+      cmd: "init",
+      data: {
+        debug: data.debug,
+        pyodide_url: data.pyodide_url,
+        packages: data.packages,
+      },
+    });
 
-    this._workerstate = { loaded: false };
+    const stateinterval = setInterval(() => {
+      this.postMessage({ cmd: "state" });
+    }, 400);
+
+    this._workerstate = { loaded: false, msg: "loading", progress: 0 };
     this.initPromise = new Promise<void>(async (resolve) => {
       while (!this._workerstate.loaded) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
+      clearInterval(stateinterval);
       this.is_open = true;
       this._zustand?.auto_progress();
       resolve();
@@ -146,6 +171,17 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
           ...this._workerstate,
           ...event.data.result.state,
         };
+        if (
+          event.data.result.state.msg &&
+          event.data.result.state.msg !== "ready"
+        ) {
+          this._zustand?.set_progress({
+            message: this._workerstate.msg,
+            status: "info",
+            progress: this._workerstate.progress,
+            blocking: true,
+          });
+        }
       }
     } else if (event.data.cmd) {
       if (event.data.cmd === "receive") {
