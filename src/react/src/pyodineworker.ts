@@ -2,8 +2,8 @@ import { FuncNodesWorker, WorkerProps } from "@linkdlab/funcnodes_react_flow";
 import { v4 as uuidv4 } from "uuid";
 import { WorkerSendMessage } from "./pyodideWorkerLogic.mjs";
 
-import pyodideDedicatedWorker from "./pyodideDedicatedWorker.mts?worker";
-import pyodideSharedWorker from "./pyodideSharedWorker.mts?worker";
+import pyodideDedicatedWorker from "./pyodideDedicatedWorker.mts?worker&inline";
+import pyodideSharedWorker from "./pyodideSharedWorker.mts?worker&inline";
 
 export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   debug?: boolean;
