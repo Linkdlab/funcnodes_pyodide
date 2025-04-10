@@ -1,5 +1,7 @@
-import gself, { ExtendetWorkerGlobalScope } from "./pyodideWorkerLayout.mjs";
+import gself, {
+  ExtendetDedicatedWorkerGlobalScope,
+} from "./pyodideWorkerLayout.mjs";
 
-const globaleSlf = gself as ExtendetWorkerGlobalScope;
+const globaleSlf = gself as ExtendetDedicatedWorkerGlobalScope;
 
 globaleSlf.init_dedicated_worker({});

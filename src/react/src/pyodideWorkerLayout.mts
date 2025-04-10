@@ -3,22 +3,19 @@ import gself, {
   PyodideLogicGlobals,
 } from "./pyodideWorkerLogic.mjs";
 
-interface SharedWorkerLayout extends PyodideLogicGlobals {
+interface CommonWorkerLayout extends PyodideLogicGlobals {
   general_initalization: (p: FullInitParams) => void;
-  init_shared_worker: (
-    params: SharedWorkerInitParams | DedicatedWorkerInitParams
-  ) => void;
 }
 
-interface ExtendetWorkerGlobalScope
+interface ExtendetDedicatedWorkerGlobalScope
   extends DedicatedWorkerGlobalScope,
-    SharedWorkerLayout {
+    CommonWorkerLayout {
   init_dedicated_worker: (params: DedicatedWorkerInitParams) => void;
 }
 
 interface ExtendetSharedWorkerGlobalScope
   extends SharedWorkerGlobalScope,
-    SharedWorkerLayout {
+    CommonWorkerLayout {
   connectedPorts: MessagePort[];
   init_shared_worker: (params: SharedWorkerInitParams) => void;
 }
@@ -35,7 +32,7 @@ interface DedicatedWorkerInitParams extends WorkerInitParams {}
 interface SharedWorkerInitParams extends WorkerInitParams {}
 
 const globaleSlf = gself as unknown as
-  | ExtendetWorkerGlobalScope
+  | ExtendetDedicatedWorkerGlobalScope
   | ExtendetSharedWorkerGlobalScope;
 
 globaleSlf.general_initalization = (p: FullInitParams) => {
@@ -47,12 +44,12 @@ globaleSlf.general_initalization = (p: FullInitParams) => {
 };
 
 const globaleSlfShared = globaleSlf as ExtendetSharedWorkerGlobalScope;
-const globaleSlfDedicated = globaleSlf as ExtendetWorkerGlobalScope;
+const globaleSlfDedicated = globaleSlf as ExtendetDedicatedWorkerGlobalScope;
 
 globaleSlfDedicated.init_dedicated_worker = (
   params: DedicatedWorkerInitParams
 ) => {
-  const globaleSlf = gself as unknown as ExtendetWorkerGlobalScope;
+  const globaleSlf = gself as unknown as ExtendetDedicatedWorkerGlobalScope;
 
   globaleSlf.onmessage = async (event) => {
     const message = event.data;
@@ -128,7 +125,7 @@ export type {
   workerStateType,
   SharedWorkerInitParams,
   DedicatedWorkerInitParams,
-  ExtendetWorkerGlobalScope,
+  ExtendetDedicatedWorkerGlobalScope,
   ExtendetSharedWorkerGlobalScope,
-  SharedWorkerLayout,
+  CommonWorkerLayout,
 };
