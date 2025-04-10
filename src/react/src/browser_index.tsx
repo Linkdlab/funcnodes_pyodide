@@ -9,11 +9,12 @@ import { createRoot } from "react-dom/client";
 import FuncnodesPyodideWorker, {
   FuncnodesPyodideWorkerProps,
 } from "./pyodineworker";
-import FuncNodes, {
+import {
+  FuncNodes,
   FuncnodesReactFlowProps,
   WorkerProps,
 } from "@linkdlab/funcnodes_react_flow";
-import "@linkdlab/funcnodes_react_flow/dist/style.css";
+import "@linkdlab/funcnodes_react_flow/dist/funcnodes_react_flow.css";
 
 const FuncNodesRenderer = (
   id_or_element: string | HTMLElement,

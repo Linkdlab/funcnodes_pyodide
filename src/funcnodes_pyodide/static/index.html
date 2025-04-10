@@ -2,18 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="favicon.ico" />
-   <link rel="apple-touch-icon" href="logo192.png" />
-    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="./funcnodes_pyodide_react_flow-favicon.ico" />
+   <link rel="apple-touch-icon" href="./funcnodes_pyodide_react_flow-logo192.png" />
+    <link rel="manifest" href="./funcnodes_pyodide_react_flow-manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
       content="Funcnodes via react"
     />
-    <title>FuncNodes</title>
-    <script  type="module"  src="index.js"></script>
-    <link href="style.css" rel="stylesheet">
+    <title>FuncNodes</title>
+  
+    <script type="module" crossorigin src="./funcnodes_pyodide_react_flow.js"></script>
+    <link rel="stylesheet" crossorigin href="./funcnodes_pyodide_react_flow-style.css">
   </head>
   <body style="margin: 0;">
     <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -25,8 +26,7 @@
       window.onload = async function() {
 
         const worker = new FuncNodes.FuncnodesPyodideWorker({
-          worker_url:"pyodideSharedWorker.js",
-          shared_worker:true,
+          shared_worker:false,
           uuid:"root",
         });
       

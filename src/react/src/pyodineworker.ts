@@ -1,6 +1,10 @@
 import { FuncNodesWorker, WorkerProps } from "@linkdlab/funcnodes_react_flow";
 import { v4 as uuidv4 } from "uuid";
 import { WorkerSendMessage } from "./pyodideWorkerLogic.mjs";
+
+import pyodideDedicatedWorker from "./pyodideDedicatedWorker.mts?worker";
+import pyodideSharedWorker from "./pyodideSharedWorker.mts?worker";
+
 // @ts-ignore
 // import workerScript from "./pyodideWorker.mjs";
 
@@ -33,93 +37,38 @@ export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   packages?: string[];
 }
 
-const getUsableWorkerURL = async (
-  worker_url: string | URL,
-  { useBlob = true }: { useBlob: boolean }
-): Promise<string> => {
-  // if url is a string, convert it to a URL object
-
-  const workerUrlString = worker_url.toString();
-
-  // IF the URL is not absolute or contains the same origin, we can use it directly
-
-  if (
-    !workerUrlString.includes("://") ||
-    workerUrlString.includes(window.location.origin)
-  ) {
-    // The same origin - Worker will run fine
-    return workerUrlString;
-  }
-
-  const type = "application/javascript";
-
-  // If the URL is absolute, we need to fetch it and create a blob URL
-  // to use it in the worker
-  const data = await fetch(worker_url);
-  const datatext = await data.text();
-  const workerPath = new URL(workerUrlString).href.split("/");
-  workerPath.pop(); // remove the last part of the URL
-
-  const importScriptsFix = `const _importScripts = importScripts;
-  const _fixImports = (url) => new URL(url, '${
-    workerPath.join("/") + "/"
-  }').href;
-  importScripts = (...urls) => _importScripts(...urls.map(_fixImports));`;
-
-  let finalURL =
-    `data:${type},` + encodeURIComponent(importScriptsFix + datatext);
-
-  if (useBlob) {
-    finalURL = URL.createObjectURL(
-      new Blob([`importScripts("${finalURL}")`], { type })
-    );
-  }
-
-  return finalURL;
-};
-
-export const worker_from_data = async (
+export const worker_from_data = (
   data: FuncnodesPyodideWorkerProps
-): Promise<Worker | SharedWorker> => {
+): Worker | SharedWorker => {
   if (data.worker) return data.worker;
-  if (data.worker_url === undefined) {
-    if (data.shared_worker) {
-      data.worker_url = new URL(
-        "./pyodideSharedWorker.js",
-        data.worker_baseurl || import.meta.url
-      ).toString();
-    } else {
-      data.worker_url = new URL(
-        "./pyodideDedicatedWorker.js",
-        data.worker_baseurl || import.meta.url
-      ).toString();
-    }
-  }
-  let paramurl = new URL(
-    await getUsableWorkerURL(`${data.worker_url}`, { useBlob: true })
-  );
-  if (data.debug !== undefined) {
-    paramurl.searchParams.set("debug", data.debug ? "true" : "false");
-  }
-  if (data.pyodide_url) {
-    paramurl.searchParams.set("pyodide_url", data.pyodide_url);
-  }
-  if (data.packages) {
-    paramurl.searchParams.set("packages", data.packages.join(","));
-  }
 
   if (data.shared_worker) {
-    data.worker = new SharedWorker(paramurl, {
-      type: "module",
-      name: data.uuid,
-    });
-
-    // Example: regularly ask for state updates
+    if (data.worker_url === undefined) {
+      data.worker = new pyodideSharedWorker({
+        name: data.uuid,
+      });
+    } else {
+      data.worker = new SharedWorker(data.worker_url, {
+        name: data.uuid,
+        type: "module",
+      });
+    }
   } else {
-    data.worker = new Worker(paramurl, {
-      type: "module",
-    });
+    if (data.worker_url === undefined) {
+      data.worker = new pyodideDedicatedWorker({
+        name: data.uuid,
+      });
+    } else {
+      data.worker = new Worker(data.worker_url, {
+        name: data.uuid,
+        type: "module",
+      });
+    }
+    // data.worker = new Worker(paramurl, {
+    //   type: "module",
+    // });
   }
+
   return data.worker;
 };
 
@@ -128,6 +77,8 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
   initPromise: Promise<void>;
   _workerstate: {
     loaded: boolean;
+    msg: string;
+    progress: number;
   };
   _port: MessagePort | undefined;
   _message_hooks: ((data: any) => Promise<void>)[] = [];
@@ -137,30 +88,38 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       ..._data,
     };
     super(data);
-    worker_from_data(data).then((worker) => {
-      this._worker = worker;
-      if (this._worker instanceof SharedWorker) {
-        data.shared_worker = true;
-        this._port = this._worker.port;
-        this._port.start(); // Ensure the port is active
-        this._port.addEventListener("message", this.onmessage.bind(this));
-      } else if (this._worker instanceof Worker) {
-        data.shared_worker = false;
-        this._worker.addEventListener("message", this.onmessage.bind(this));
-      } else {
-        throw new Error("worker must be an instance of Worker or SharedWorker");
-      }
+    this._worker = worker_from_data(data);
+    if (this._worker instanceof SharedWorker) {
+      data.shared_worker = true;
+      this._port = this._worker.port;
+      this._port.start(); // Ensure the port is active
+      this._port.addEventListener("message", this.onmessage.bind(this));
+    } else if (this._worker instanceof Worker) {
+      data.shared_worker = false;
+      this._worker.addEventListener("message", this.onmessage.bind(this));
+    } else {
+      throw new Error("worker must be an instance of Worker or SharedWorker");
+    }
+
+    this.postMessage({
+      cmd: "init",
+      data: {
+        debug: data.debug,
+        pyodide_url: data.pyodide_url,
+        packages: data.packages,
+      },
     });
 
-    setInterval(() => {
+    const stateinterval = setInterval(() => {
       this.postMessage({ cmd: "state" });
-    }, 1000);
+    }, 400);
 
-    this._workerstate = { loaded: false };
+    this._workerstate = { loaded: false, msg: "loading", progress: 0 };
     this.initPromise = new Promise<void>(async (resolve) => {
       while (!this._workerstate.loaded) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
+      clearInterval(stateinterval);
       this.is_open = true;
       this._zustand?.auto_progress();
       resolve();
@@ -212,6 +171,17 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
           ...this._workerstate,
           ...event.data.result.state,
         };
+        if (
+          event.data.result.state.msg &&
+          event.data.result.state.msg !== "ready"
+        ) {
+          this._zustand?.set_progress({
+            message: this._workerstate.msg,
+            status: "info",
+            progress: this._workerstate.progress,
+            blocking: true,
+          });
+        }
       }
     } else if (event.data.cmd) {
       if (event.data.cmd === "receive") {

@@ -81,6 +81,11 @@ interface workerStateType {
   packages: string[];
   worker: { [key: string]: FuncNodesWorkerState };
   pyodideReady: boolean;
+  state: {
+    loaded: boolean;
+    msg: string;
+    progress: number;
+  };
   pyodideReadyPromise: Promise<{
     pyodide: PyodideInterface;
     micropip: anymicropip;
@@ -99,6 +104,7 @@ globalThis.workerState = {
   pyodide: null,
   pyodide_url: __DEFAULT_PYODIDE_URL__,
   packages: [],
+  state: { msg: "loading", loaded: false, progress: 0 },
   micropip: null,
   worker: {},
   pyodideReady: false,
@@ -142,11 +148,28 @@ globalThis.initializePyodide = async (): Promise<{
   micropip: anymicropip;
 }> => {
   if (!globalThis.workerState.pyodide) {
+    console.log(
+      "initializePyodide with: Debug:",
+      globalThis.workerState.debug,
+      "Pyodide URL:",
+      globalThis.workerState.pyodide_url,
+      "Packages:",
+      globalThis.workerState.packages
+    );
+
     console.debug("Loading Pyodide...");
+    globalThis.workerState.state.msg = "Loading Pyodide...";
+    globalThis.workerState.state.progress = 0.0;
     await globalThis.reset();
     console.debug("Loading Pyodide module...");
-    const pyodideModule = await import(globalThis.workerState.pyodide_url);
+    globalThis.workerState.state.msg = "Loading Pyodide module...";
+    globalThis.workerState.state.progress = 0.1;
+    const pyodideModule = await import(
+      /* @vite-ignore */ globalThis.workerState.pyodide_url
+    );
     console.debug("Loading Pyodide instance...");
+    globalThis.workerState.state.msg = "Loading Pyodide instance...";
+    globalThis.workerState.state.progress = 0.2;
 
     const loadPyodide = pyodideModule.loadPyodide as typeof loadPyodideType;
     // index url is the folder of workerState.pyodide_url (which points to .../pyodide.mjs)
@@ -170,18 +193,28 @@ globalThis.initializePyodide = async (): Promise<{
   }
   if (!globalThis.workerState.micropip) {
     console.debug("Importing micropip...");
+    globalThis.workerState.state.msg = "Importing micropip...";
+    globalThis.workerState.state.progress = 0.3;
     globalThis.workerState.micropip =
       globalThis.workerState.pyodide.pyimport("micropip");
   }
 
   console.debug("Pyodide ready. Installing funcnodes...");
+
   for (const pkg of globalThis.workerState.packages) {
     console.log("Installing package:", pkg);
+    globalThis.workerState.state.msg = `Installing package: ${pkg}`;
+
     await globalThis.workerState.micropip.install(pkg);
   }
+  globalThis.workerState.state.msg = "Installing funcnodes";
+  globalThis.workerState.state.progress = 0.8;
   await globalThis.workerState.micropip.install("funcnodes");
+  globalThis.workerState.state.msg = "Installing funcnodes-worker";
   await globalThis.workerState.micropip.install("funcnodes-worker");
+  globalThis.workerState.state.msg = "Installing funcnodes-pyodide";
   await globalThis.workerState.micropip.install("funcnodes-pyodide");
+  globalThis.workerState.state.msg = "Importing funcnodes";
   console.debug("Importing funcnodes...");
   await globalThis.workerState.pyodide.runPythonAsync(
     "import funcnodes_pyodide"
@@ -190,6 +223,8 @@ globalThis.initializePyodide = async (): Promise<{
   console.debug("Running post_pyodide_ready...");
   await globalThis.workerState.post_pyodide_ready?.(globalThis.workerState);
   console.debug("Pyodide ready");
+  globalThis.workerState.state.msg = "ready";
+  globalThis.workerState.state.progress = 0.1;
   globalThis.workerState.pyodideReady = true;
   return {
     pyodide: globalThis.workerState.pyodide,
@@ -235,7 +270,10 @@ globalThis.initializeFuncNodesWorker = async (
   uuid: string
 ): Promise<FuncNodesWorkerState> => {
   try {
-    const { pyodide } = await globalThis.initializePyodide();
+    if (!globalThis.workerState.pyodideReadyPromise)
+      throw new Error("Pyodide newer initialized");
+
+    const { pyodide } = await globalThis.workerState.pyodideReadyPromise;
     if (!globalThis.has_worker(uuid)) {
       globalThis.workerState.worker[uuid] = {
         worker: null,
@@ -382,7 +420,7 @@ globalThis.startInitialization = ({
   globalThis.workerState.packages = packages;
   globalThis.workerState.receivepy = receivepy;
   globalThis.workerState.receivepy_bytes = receivepy_bytes;
-  globalThis.workerState.pyodideReadyPromise = globalThis.initializePyodide();
+  globalThis.workerState.pyodideReadyPromise = null;
   globalThis.workerState.post_pyodide_ready = post_pyodide_ready;
   return globalThis.workerState;
 };
@@ -405,6 +443,15 @@ interface CommandMessage extends BaseMessage {
 
 interface PingMessage extends CommandMessage {
   cmd: "ping";
+}
+
+interface InitMessage extends CommandMessage {
+  cmd: "init";
+  data: {
+    pyodide_url?: string;
+    packages?: string[];
+    debug?: boolean;
+  };
 }
 
 interface WorkerMessage extends CommandMessage {
@@ -436,6 +483,27 @@ globalThis.register_cmd_message("ping", async (_msg: PingMessage) => {
   return "pong";
 });
 
+globalThis.register_cmd_message("init", async (msg: InitMessage) => {
+  // lobalThis.initializePyodide()
+
+  if (globalThis.workerState.pyodideReadyPromise) {
+    throw new Error("Pyodide is already initialized");
+  }
+  if (msg.data) {
+    if (msg.data.pyodide_url) {
+      globalThis.workerState.pyodide_url = msg.data.pyodide_url;
+    }
+    if (msg.data.packages) {
+      globalThis.workerState.packages = msg.data.packages;
+    }
+    if (msg.data.debug) {
+      globalThis.workerState.debug = msg.data.debug;
+    }
+  }
+
+  globalThis.workerState.pyodideReadyPromise = globalThis.initializePyodide();
+});
+
 globalThis.register_cmd_message("_eval", async (msg: CommandMessage) => {
   try {
     const res = await globalThis.workerState.pyodide?.runPythonAsync(
@@ -449,7 +517,12 @@ globalThis.register_cmd_message("_eval", async (msg: CommandMessage) => {
 });
 
 globalThis.register_cmd_message("state", async (_msg: StateMessage) => {
-  return { state: { loaded: globalThis.workerState.pyodideReady } };
+  return {
+    state: {
+      ...globalThis.workerState.state,
+      loaded: globalThis.workerState.pyodideReady,
+    },
+  };
 });
 
 globalThis.register_cmd_message("worker:state", async (msg: WorkerMessage) => {
@@ -524,14 +597,6 @@ globalThis.read_url_params = () => {
   const pyodide_url = params.get("pyodide_url") || undefined;
   const packages = params.get("packages")?.split(",") || [];
 
-  console.log(
-    "Debug:",
-    debug,
-    "Pyodide URL:",
-    pyodide_url,
-    "Packages:",
-    packages
-  );
   return { debug, pyodide_url, packages };
 };
 
