@@ -5,28 +5,6 @@ import { WorkerSendMessage } from "./pyodideWorkerLogic.mjs";
 import pyodideDedicatedWorker from "./pyodideDedicatedWorker.mts?worker";
 import pyodideSharedWorker from "./pyodideSharedWorker.mts?worker";
 
-// @ts-ignore
-// import workerScript from "./pyodideWorker.mjs";
-
-// const intitalize_pyodide_worker = (debug: boolean = false): Worker => {
-//   const _workerscript = workerScript.replace(
-//     "_DEBUG_",
-//     debug ? "true" : "false"
-//   );
-
-//   const workerBlob = new Blob([_workerscript], {
-//     type: "application/javascript",
-//   });
-//   const workerURL = URL.createObjectURL(workerBlob);
-//   const pyiodide_worker = new Worker(workerURL, { type: "module" });
-
-// const communicator = new WorkerCommunicator(pyiodide_worker, worker);
-
-// @ts-ignore
-
-//   return pyiodide_worker;
-// };
-
 export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   debug?: boolean;
   worker_url?: string;
