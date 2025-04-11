@@ -204,7 +204,6 @@ globalThis.initializePyodide = async (): Promise<{
   for (const pkg of globalThis.workerState.packages) {
     console.log("Installing package:", pkg);
     globalThis.workerState.state.msg = `Installing package: ${pkg}`;
-
     await globalThis.workerState.micropip.install(pkg);
   }
   globalThis.workerState.state.msg = "Installing funcnodes";
@@ -214,6 +213,8 @@ globalThis.initializePyodide = async (): Promise<{
   await globalThis.workerState.micropip.install("funcnodes-worker");
   globalThis.workerState.state.msg = "Installing funcnodes-pyodide";
   await globalThis.workerState.micropip.install("funcnodes-pyodide");
+  globalThis.workerState.state.msg = "Installing funcnodes-react-flow";
+  await globalThis.workerState.micropip.install("funcnodes-react-flow");
   globalThis.workerState.state.msg = "Importing funcnodes";
   console.debug("Importing funcnodes...");
   await globalThis.workerState.pyodide.runPythonAsync(

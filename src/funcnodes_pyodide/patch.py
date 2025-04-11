@@ -7,7 +7,6 @@ def patch():
     from funcnodes_core._logging import (
         FUNCNODES_LOGGER,
         _update_logger_handlers,
-        set_logging_dir,
     )  # noqa C0415 # pylint: disable=import-outside-toplevel
 
     _update_logger_handlers(FUNCNODES_LOGGER)
