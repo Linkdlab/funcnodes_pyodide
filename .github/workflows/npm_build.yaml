@@ -27,6 +27,7 @@ jobs:
         with:
           node-version: "22"
           cache: yarn
+          cache-dependency-path: src/react/yarn.lock
 
       # Install dependencies in the src/react directory.
       - name: Install dependencies
