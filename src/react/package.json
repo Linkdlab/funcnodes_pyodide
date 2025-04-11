@@ -1,6 +1,6 @@
 {
   "name": "@linkdlab/funcnodes_pyodide_react_flow",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "private": false,
   "description": "Frontend with React Flow for FuncNodes",
   "repository": {
@@ -15,21 +15,41 @@
   "homepage": "https://github.com/Linkdlab/funcnodes_pyodide#readme",
   "type": "module",
   "source": "src/index.tsx",
-  "main": "dist/umd/index.umd.js",
-  "module": "dist/esm/index.esm.js",
+  "main": "dist/index.umd.js",
+  "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
   "style": "dist/style.css",
+  "worker:module": "dist/pyodideWebWorker.es.js",
+  "worker:main": "dist/pyodideWebWorker.umd.js",
+  "worker:types": "dist/pyodideWebWorker.d.ts",
   "files": [
     "dist"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.umd.js"
+    },
+    "./package.json": "./package.json",
+    "./style.css": {
+      "import": "./dist/style.css",
+      "require": "./dist/style.css"
+    },
+    "./pyodideWebWorker": {
+      "types": "./dist/pyodideWebWorker.d.mts",
+      "import": "./dist/pyodideWebWorker.es.js",
+      "require": "./dist/pyodideWebWorker.umd.js"
+    }
+  },
   "scripts": {
     "typecheck": "tsc --noEmit --watch",
-    "build": "vite build --config vite.browser.config.js && vite build ",
+    "build": "vite build --config vite.browser.config.js && vite build && vite build --config vite.worker.config.js",
     "watch": "vite --config vite.browser.config.js",
     "preview": "vite build --config vite.browser.config.js && vite preview --config vite.browser.config.js"
   },
   "devDependencies": {
-    "@linkdlab/funcnodes_react_flow": "^0.4.6",
+    "@linkdlab/funcnodes_react_flow": "^0.4.7",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.2",
     "@types/uuid": "^10.0.0",
@@ -43,7 +63,7 @@
     "vite-plugin-dts": "^4.5.3"
   },
   "peerDependencies": {
-    "@linkdlab/funcnodes_react_flow": "^0.4.6",
+    "@linkdlab/funcnodes_react_flow": "^0.4.7",
     "pyodide": "^0.27.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

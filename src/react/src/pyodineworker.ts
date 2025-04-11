@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { WorkerSendMessage } from "./pyodideWorkerLogic.mjs";
 
 import pyodideDedicatedWorker from "./pyodideDedicatedWorker.mts?worker&inline";
-import pyodideSharedWorker from "./pyodideSharedWorker.mts?worker&inline";
+import pyodideSharedWorker from "./pyodideSharedWorker.mts?sharedworker&inline";
 
 export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   debug?: boolean;
@@ -13,6 +13,10 @@ export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   worker?: Worker | SharedWorker;
   pyodide_url?: string;
   packages?: string[];
+  worker_classes?: {
+    Shared: new (options?: { name?: string }) => SharedWorker;
+    Dedicated: new (options?: { name?: string }) => Worker;
+  };
 }
 
 export const worker_from_data = (
@@ -20,9 +24,15 @@ export const worker_from_data = (
 ): Worker | SharedWorker => {
   if (data.worker) return data.worker;
 
+  if (!data.worker_classes)
+    data.worker_classes = {
+      Shared: pyodideSharedWorker,
+      Dedicated: pyodideDedicatedWorker,
+    };
+
   if (data.shared_worker) {
     if (data.worker_url === undefined) {
-      data.worker = new pyodideSharedWorker({
+      data.worker = new data.worker_classes.Shared({
         name: data.uuid,
       });
     } else {
@@ -33,7 +43,7 @@ export const worker_from_data = (
     }
   } else {
     if (data.worker_url === undefined) {
-      data.worker = new pyodideDedicatedWorker({
+      data.worker = new data.worker_classes.Dedicated({
         name: data.uuid,
       });
     } else {
@@ -42,9 +52,6 @@ export const worker_from_data = (
         type: "module",
       });
     }
-    // data.worker = new Worker(paramurl, {
-    //   type: "module",
-    // });
   }
 
   return data.worker;
@@ -66,6 +73,7 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       ..._data,
     };
     super(data);
+
     this._worker = worker_from_data(data);
     if (this._worker instanceof SharedWorker) {
       data.shared_worker = true;
@@ -237,6 +245,10 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       return common.join("/");
     }, fileresults[0]);
     return common_root;
+  }
+
+  get ready() {
+    return this._workerstate.loaded;
   }
 }
 
