@@ -1,5 +1,4 @@
 from funcnodes_worker import RemoteWorker
-import json
 import uuid
 
 
