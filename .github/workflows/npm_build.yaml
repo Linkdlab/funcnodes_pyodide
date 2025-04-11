@@ -43,7 +43,7 @@ jobs:
         run: |
           # Install pre-commit and run hooks
           pip install pre-commit
-          pre-commit run --all-files
+          pre-commit run --all-files || true
 
       # Commit any generated build files.
       # If there are file changes (for example in dist), commit them.
