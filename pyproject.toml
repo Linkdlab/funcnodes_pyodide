@@ -1,6 +1,6 @@
 [project]
 name = "funcnodes-pyodide"
-version = "0.1.11"
+version = "2.0.0"
 description = "Funcnodes in pyodide"
 readme = "README.md"
 classifiers = [ "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",]

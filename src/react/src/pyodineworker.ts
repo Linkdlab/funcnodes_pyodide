@@ -96,7 +96,7 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       },
     });
 
-    const stateinterval = setInterval(() => {
+    const state_interval = setInterval(() => {
       this.postMessage({ cmd: "state" });
     }, 400);
 
@@ -105,14 +105,14 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       while (!this._workerstate.loaded) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      clearInterval(stateinterval);
+      clearInterval(state_interval);
       this.is_open = true;
       this._zustand?.auto_progress();
       resolve();
     });
 
     this.initPromise.then(() => {
-      this.stepwise_fullsync();
+      this.getSyncManager().stepwise_fullsync();
     });
   }
 
@@ -175,12 +175,13 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
           throw new Error("worker_id is undefined");
         }
         if (event.data.worker_id === this.uuid)
-          this.receive(JSON.parse(event.data.msg));
+          this.getCommunicationManager().receive(JSON.parse(event.data.msg));
       } else if (event.data.cmd === "receive_bytes") {
         if (event.data.worker_id === undefined) {
           throw new Error("worker_id is undefined");
         }
-        if (event.data.worker_id === this.uuid) this.onbytes(event.data.msg);
+        if (event.data.worker_id === this.uuid)
+          this.getCommunicationManager().receive_bytes(event.data.msg);
       }
     }
   }
@@ -209,8 +210,8 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
             const data = (
               (event.target as FileReader).result as string
             )?.replace(/^data:.+;base64,/, "");
-            const subtarget = file.webkitRelativePath || file.name;
-            const target = root ? `${root}/${subtarget}` : subtarget;
+            const sub_target = file.webkitRelativePath || file.name;
+            const target = root ? `${root}/${sub_target}` : sub_target;
             const ans = await this._send_cmd({
               cmd: "upload",
               kwargs: { data: data, filename: target },
@@ -229,9 +230,9 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       });
       promises.push(promise);
     }
-    const fileresults = await Promise.all(promises);
+    const file_results = await Promise.all(promises);
     // get common root
-    const common_root = fileresults.reduce((acc, val) => {
+    const common_root = file_results.reduce((acc, val) => {
       const split = val.split("/");
       const split_acc = acc.split("/");
       const common = [];
@@ -243,7 +244,7 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
         }
       }
       return common.join("/");
-    }, fileresults[0]);
+    }, file_results[0]);
     return common_root;
   }
 
@@ -253,4 +254,4 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
 }
 
 export default FuncnodesPyodideWorker;
-// export { intitalize_pyodide_worker };
+// export { initialize_pyodide_worker };

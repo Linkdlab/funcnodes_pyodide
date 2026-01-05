@@ -24,15 +24,15 @@ const FuncNodesRenderer = (
     options = {};
   }
 
-  const { element, eleid } =
+  const { element, ele_id } =
     typeof id_or_element === "string"
       ? {
           element: document.getElementById(id_or_element) as HTMLElement,
-          eleid: id_or_element,
+          ele_id: id_or_element,
         }
-      : { element: id_or_element, eleid: id_or_element.id };
+      : { element: id_or_element, ele_id: id_or_element.id };
 
-  const content = <FuncNodes {...options} id={options.id || eleid} />;
+  const content = <FuncNodes {...options} id={options.id || ele_id} />;
 
   const root = createRoot(element);
   root.render(content);
@@ -53,11 +53,11 @@ const FuncnodesPyodide = (
   }
 
   if (!data.uuid) {
-    const eleid =
+    const ele_id =
       typeof id_or_element === "string" ? id_or_element : id_or_element.id;
 
-    if (eleid !== undefined) {
-      data.uuid = eleid;
+    if (ele_id !== undefined) {
+      data.uuid = ele_id;
     }
   }
 

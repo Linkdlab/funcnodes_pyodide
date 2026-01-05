@@ -1,7 +1,6 @@
 {
   "name": "@linkdlab/funcnodes_pyodide_react_flow",
-  "version": "0.1.11",
-  "private": false,
+  "version": "2.0.0",
   "description": "Frontend with React Flow for FuncNodes",
   "repository": {
     "type": "git",
@@ -49,24 +48,23 @@
     "preview": "vite build --config vite.browser.config.js && vite preview --config vite.browser.config.js"
   },
   "devDependencies": {
-    "@linkdlab/funcnodes_react_flow": "^0.4.7",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.2",
-    "@types/uuid": "^10.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "pyodide": "^0.27.5",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "sass": "^1.86.3",
-    "typescript": "^5.8.3",
-    "vite": "^6.2.6",
-    "vite-plugin-dts": "^4.5.3"
+    "@linkdlab/funcnodes_react_flow": "^2.1.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^11.0.0",
+    "@vitejs/plugin-react": "^5.1.2",
+    "pyodide": "^0.29.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sass": "^1.97.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.0",
+    "vite-plugin-dts": "^4.5.4"
   },
   "peerDependencies": {
-    "@linkdlab/funcnodes_react_flow": "^0.4.7",
+    "@linkdlab/funcnodes_react_flow": "^2.0.0",
     "pyodide": "^0.27.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
-  },
-  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
+  }
 }
