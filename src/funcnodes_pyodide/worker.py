@@ -1,3 +1,4 @@
+from exposedfunctionality import exposed_method
 from funcnodes_worker import RemoteWorker
 import uuid
 
@@ -37,3 +38,22 @@ class PyodideWorker(RemoteWorker):
 
     def set_receiver(self, res):
         self._receiver = res
+
+    
+    @exposed_method()
+    def get_info(self) -> dict:
+        from importlib import metadata
+
+        dists = metadata.distributions()
+        packages = []
+        for dist in dists:
+            packages.append({
+                "name": dist.name,
+                "version": dist.version,
+            })
+        packages.sort(key=lambda x: x["name"])
+        return {
+            "name": self.name(),
+            "uuid": self.uuid(),
+            "packages": packages,
+        }

@@ -17,27 +17,31 @@
   </head>
   <body style="margin: 0;">
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root" style="height: 100vh; width: 100%; padding:40px; box-sizing:border-box;">
+    <div id="root" style="height: 100vh; width: 100%; box-sizing:border-box;">
     </div>
 
     <script >
       // wait till window is loaded
       window.onload = async function() {
 
-        const worker = new FuncNodes.FuncnodesPyodideWorker({
-          shared_worker:false,
-          uuid:"root",
+        // const worker = new FuncNodes.FuncnodesPyodideWorker({
+        //   shared_worker:false,
+        //   uuid:"root",
+        // });
+
+        window.FuncNodes.FuncnodesPyodide("root",{
+          useWorkerManager:false,
+          restore_worker_state_on_load:true,
+          packages:[],
+          // worker:worker,
         });
 
-        window.FuncNodes("root",{
-          useWorkerManager:false,
-          worker:worker,
-        });
+      window.addEventListener("beforeunload", async function() {
+        await fnrf_zst.root.worker.save_worker_state()
+      });
       }
 
 
     </script>
   </body>
-
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js"></script>
 </html>

@@ -43,12 +43,13 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit --watch",
+    "test": "node --test",
     "build": "vite build --config vite.browser.config.js && vite build && vite build --config vite.worker.config.js",
     "watch": "vite --config vite.browser.config.js",
     "preview": "vite build --config vite.browser.config.js && vite preview --config vite.browser.config.js"
   },
   "devDependencies": {
-    "@linkdlab/funcnodes_react_flow": "^2.1.1",
+    "@linkdlab/funcnodes_react_flow": "^2.1.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^11.0.0",
@@ -56,7 +57,7 @@
     "pyodide": "^0.29.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "sass": "^1.97.1",
+    "sass": "^1.97.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
     "vite-plugin-dts": "^4.5.4"
