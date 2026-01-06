@@ -1,19 +1,16 @@
+import asyncio
 import sys
 
 if sys.platform == "emscripten":
     from .patch import patch
 
     patch()
-
+    
 from .worker import PyodideWorker
-import asyncio
-
-
 
 async def new_worker(*args, **kwargs):
     worker = PyodideWorker(*args, **kwargs)
-    loop = asyncio.get_event_loop()
-    loop.create_task(worker.run_forever_async())
+    asyncio.get_running_loop().create_task(worker.run_forever_async())
     while worker.runstate != "running":
         await asyncio.sleep(0.1)
     return worker
