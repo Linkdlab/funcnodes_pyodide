@@ -17,6 +17,7 @@ export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
     Shared: new (options?: { name?: string }) => SharedWorker;
     Dedicated: new (options?: { name?: string }) => Worker;
   };
+  restore_worker_state_on_load?: boolean | string;
 }
 
 export const worker_from_data = (
@@ -103,6 +104,13 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
     this._workerstate = { loaded: false, msg: "loading", progress: 0 };
     this.initPromise = new Promise<void>(async (resolve) => {
       while (!this._workerstate.loaded) {
+        this._zustand?.set_progress({
+          message: this._workerstate.msg,
+          status: "info",
+          progress: this._workerstate.progress,
+          blocking: true,
+        });
+
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       clearInterval(state_interval);
@@ -111,8 +119,18 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       resolve();
     });
 
-    this.initPromise.then(() => {
-      this.getSyncManager().stepwise_fullsync();
+    this.initPromise.then(async () => {
+      if (data.restore_worker_state_on_load) {
+        const key =
+          typeof data.restore_worker_state_on_load === "string"
+            ? data.restore_worker_state_on_load
+            : this._storage_key();
+        const restored = await this.restore_worker_state(key);
+
+        if (!restored) {
+          await this.getSyncManager().stepwise_fullsync();
+        }
+      }
     });
   }
 
@@ -181,7 +199,7 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
           throw new Error("worker_id is undefined");
         }
         if (event.data.worker_id === this.uuid)
-          this.getCommunicationManager().receive_bytes(event.data.msg);
+          this.getCommunicationManager().onbytes(event.data.msg);
       }
     }
   }
@@ -235,7 +253,7 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
     const common_root = file_results.reduce((acc, val) => {
       const split = val.split("/");
       const split_acc = acc.split("/");
-      const common = [];
+      const common: string[] = [];
       for (let i = 0; i < split.length; i++) {
         if (split[i] === split_acc[i]) {
           common.push(split[i]);
@@ -250,6 +268,51 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
 
   get ready() {
     return this._workerstate.loaded;
+  }
+
+  private _storage_key(): string {
+    return `funcnodes_pyodide:worker_export:${this.uuid}`;
+  }
+
+  private _has_local_storage(): boolean {
+    try {
+      return typeof globalThis !== "undefined" && "localStorage" in globalThis;
+    } catch {
+      return false;
+    }
+  }
+
+  async save_worker_state({ withFiles = true } = {}): Promise<string> {
+    const resp = await this.export({ withFiles });
+    const export_str =
+      typeof resp === "string" ? resp : (resp?.data as string | undefined);
+
+    if (typeof export_str !== "string") {
+      throw new Error("export_worker did not return a string export");
+    }
+
+    if (this._has_local_storage()) {
+      globalThis.localStorage.setItem(this._storage_key(), export_str);
+    }
+
+    return export_str;
+  }
+
+  async restore_worker_state(key?: string): Promise<boolean> {
+    if (!this._has_local_storage()) return false;
+
+    const export_str = globalThis.localStorage.getItem(
+      key || this._storage_key()
+    );
+    if (!export_str) return false;
+
+    try {
+      await this.update_from_export(export_str);
+      return true;
+    } catch (e) {
+      console.warn("Failed to restore worker state from storage", e);
+      return false;
+    }
   }
 }
 

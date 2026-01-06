@@ -1,46 +1,14 @@
-declare global {
-  interface Window {
-    FuncNodes: any;
-  }
-}
-
-import * as React from "react";
-import { createRoot } from "react-dom/client";
 import FuncnodesPyodideWorker, {
   FuncnodesPyodideWorkerProps,
 } from "./pyodineworker";
-import {
-  FuncNodes,
-  FuncnodesReactFlowProps,
-  WorkerProps,
-} from "@linkdlab/funcnodes_react_flow";
+import { FuncNodesRenderer, WorkerProps } from "@linkdlab/funcnodes_react_flow";
 import "@linkdlab/funcnodes_react_flow/dist/funcnodes_react_flow.css";
 
-const FuncNodesRenderer = (
-  id_or_element: string | HTMLElement,
-  options?: Partial<FuncnodesReactFlowProps>
-) => {
-  if (options === undefined) {
-    options = {};
+declare global {
+  interface Window {
+    FuncNodes: typeof FuncNodesRenderer;
   }
-
-  const { element, ele_id } =
-    typeof id_or_element === "string"
-      ? {
-          element: document.getElementById(id_or_element) as HTMLElement,
-          ele_id: id_or_element,
-        }
-      : { element: id_or_element, ele_id: id_or_element.id };
-
-  const content = <FuncNodes {...options} id={options.id || ele_id} />;
-
-  const root = createRoot(element);
-  root.render(content);
-  return {
-    root,
-    content,
-  };
-};
+}
 
 const FuncnodesPyodide = (
   id_or_element: string | HTMLElement,
@@ -63,15 +31,19 @@ const FuncnodesPyodide = (
 
   const worker = new FuncnodesPyodideWorker(data);
 
-  window.FuncNodes(id_or_element, {
+  FuncNodesRenderer(id_or_element, {
     useWorkerManager: false,
     worker: worker,
+    debug: data.debug,
+    worker_url: "dummy", // dummy url as the current implementation requires one (will be removed in the next release of funcnodes_react_flow)
   });
 };
 
-window.FuncNodes = FuncNodesRenderer;
-window.FuncNodes.FuncnodesPyodideWorker = FuncnodesPyodideWorker;
+if (!window.FuncNodes) {
+  window.FuncNodes = FuncNodesRenderer;
+}
 
-window.FuncNodes.FuncnodesPyodide = FuncnodesPyodide;
+(window.FuncNodes as any).FuncnodesPyodideWorker = FuncnodesPyodideWorker;
+(window.FuncNodes as any).FuncnodesPyodide = FuncnodesPyodide;
 
-export default FuncNodesRenderer;
+export default FuncnodesPyodide;
