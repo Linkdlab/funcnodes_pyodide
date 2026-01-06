@@ -14,7 +14,7 @@ This package exists so FuncNodes workflows can be:
 
 ## What’s in this folder
 
-This repo subtree contains *two* deliverables plus a prebuilt demo:
+This repo subtree contains _two_ deliverables plus a prebuilt demo:
 
 ### 1) Python package: `funcnodes-pyodide` (AGPL-3.0)
 
@@ -82,9 +82,9 @@ Recommended environment variables (keep caches/config local):
 From this repo (this folder contains its own `uv.lock`):
 
 ```bash
-cd tools/funcnodes_pyodide
-UV_CACHE_DIR=.cache/uv uv sync
-FUNCNODES_CONFIG_DIR=.funcnodes UV_CACHE_DIR=.cache/uv uv run python -m funcnodes_pyodide
+cd funcnodes_pyodide
+uv sync
+FUNCNODES_CONFIG_DIR=.funcnodes uv run python -m funcnodes_pyodide
 ```
 
 Open the printed `http://localhost:<port>` URL in a browser.
@@ -148,7 +148,7 @@ This gives you direct access to the worker instance (for example to call
 - `uuid`: logical worker id (used to route messages)
 - `shared_worker`: `true` to use a `SharedWorker`, `false` for a dedicated `Worker`
 - `pyodide_url`: URL to `pyodide.mjs` (defaults to the jsDelivr CDN)
-- `packages`: additional Python packages to install via `micropip` *before* starting the worker
+- `packages`: additional Python packages to install via `micropip` _before_ starting the worker
 - `worker_url` / `worker`: provide your own Worker/SharedWorker instance or URL instead of using the inline worker bundles
 - `debug`: enable more verbose console logs during boot
 
@@ -176,25 +176,27 @@ By default, the Pyodide worker installs `funcnodes-pyodide` from PyPI via
 `micropip`. For local development you typically want to install a wheel
 built from your working tree instead.
 
-1) Build a wheel:
+1. Build a wheel:
 
 ```bash
-cd tools/funcnodes_pyodide
-UV_CACHE_DIR=.cache/uv uv build --wheel
+cd funcnodes_pyodide
+uv build --wheel
 ```
 
-2) Copy the wheel into the React dev server `public/` folder (keep the
-original filename, don’t rename it):
+2. Copy the wheel into the React dev server `public/` folder (keep the
+   original filename, don’t rename it):
 
 ```bash
 mkdir -p src/react/public/pywheels
 cp dist/*.whl src/react/public/pywheels/
 ```
 
-3) Point `packages` at the served wheel URL:
+3. Point `packages` at the served wheel URL:
 
 ```js
-const wheelUrl = `${window.location.origin}/pywheels/funcnodes_pyodide-<version>-py3-none-any.whl?t=${Date.now()}`;
+const wheelUrl = `${
+  window.location.origin
+}/pywheels/funcnodes_pyodide-<version>-py3-none-any.whl?t=${Date.now()}`;
 window.FuncNodes.FuncnodesPyodide("root", { packages: [wheelUrl] });
 ```
 
@@ -212,15 +214,16 @@ Notes:
 ### Python (package + tests)
 
 ```bash
-cd tools/funcnodes_pyodide
+git clone https://github.com/Linkdlab/funcnodes_pyodide
+cd funcnodes_pyodide
 UV_CACHE_DIR=.cache/uv uv sync --group dev
-FUNCNODES_CONFIG_DIR=.funcnodes UV_CACHE_DIR=.cache/uv uv run pytest
+FUNCNODES_CONFIG_DIR=.funcnodes uv run pytest
 ```
 
 ### JS/TS (worker + UI bundle)
 
 ```bash
-cd tools/funcnodes_pyodide/src/react
+cd funcnodes_pyodide/src/react
 yarn install
 yarn watch
 yarn test
