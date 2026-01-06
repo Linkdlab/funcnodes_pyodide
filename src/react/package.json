@@ -63,9 +63,9 @@
     "vite-plugin-dts": "^4.5.4"
   },
   "peerDependencies": {
-    "@linkdlab/funcnodes_react_flow": "^2.0.0",
-    "pyodide": "^0.27.2",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@linkdlab/funcnodes_react_flow": "^2.1.2",
+    "pyodide": "^0.29.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   }
 }

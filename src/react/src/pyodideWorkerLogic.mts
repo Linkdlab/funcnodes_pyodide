@@ -8,7 +8,7 @@
 import { loadPyodide as loadPyodideType, PyodideInterface } from "pyodide";
 
 const __DEFAULT_PYODIDE_URL__ =
-  "https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.mjs";
+  "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.mjs";
 
 // Assume PYCODE is provided via a bundler or global constant.
 
@@ -175,7 +175,8 @@ globalThis.initializePyodide = async (): Promise<{
     // index url is the folder of workerState.pyodide_url (which points to .../pyodide.mjs)
     const pyodideUrl = new URL(globalThis.workerState.pyodide_url);
     const indexURL = new URL(".", pyodideUrl).toString();
-    if (globalThis.workerState.debug) console.debug("Pyodide indexURL:", indexURL);
+    if (globalThis.workerState.debug)
+      console.debug("Pyodide indexURL:", indexURL);
 
     globalThis.workerState.pyodide = await (
       loadPyodide as typeof loadPyodideType
@@ -370,13 +371,24 @@ globalThis.receivepy_bytes = (
   msg: receivepyBytesMsgType,
   kwargs: receivepyBytesKwargsType
 ) => {
-  msg = (msg as unknown as any).toJs();
+  let normalizedMsg: unknown = msg;
+  const maybeProxy = msg as unknown as { toJs?: (opts?: any) => unknown };
+  if (maybeProxy && typeof maybeProxy.toJs === "function") {
+    try {
+      normalizedMsg = maybeProxy.toJs({ dict_converter: Object.fromEntries });
+    } catch {
+      normalizedMsg = maybeProxy.toJs();
+    }
+  }
+  if (normalizedMsg instanceof Map) {
+    normalizedMsg = Object.fromEntries(normalizedMsg.entries());
+  }
   try {
     let data: Partial<receivepyBytesParams> = {};
-    if (msg instanceof Uint8Array) {
-      data.msg = msg;
+    if (normalizedMsg instanceof Uint8Array) {
+      data.msg = normalizedMsg;
     } else {
-      data = msg;
+      data = normalizedMsg as Partial<receivepyBytesParams>;
     }
 
     if (data.msg === undefined) return;

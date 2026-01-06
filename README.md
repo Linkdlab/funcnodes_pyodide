@@ -115,7 +115,7 @@ This is the recommended API when using the prebuilt browser bundle:
   window.FuncNodes.FuncnodesPyodide("root", {
     useWorkerManager: false,
     debug: true,
-    // pyodide_url: "https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.mjs",
+    // pyodide_url: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.mjs",
     // packages: ["https://example.com/your.whl"],
     // restore_worker_state_on_load: true,
   });
