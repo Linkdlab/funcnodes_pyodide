@@ -18,6 +18,7 @@ export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
     Dedicated: new (options?: { name?: string }) => Worker;
   };
   restore_worker_state_on_load?: boolean | string;
+  post_worker_initialized?: (worker: FuncnodesPyodideWorker) => Promise<void>;
 }
 
 const normalizePackageSpecs = (
@@ -37,7 +38,11 @@ const normalizePackageSpecs = (
   return packages.map((spec) => {
     const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(spec);
     if (hasScheme) return spec;
-    if (spec.startsWith("/") || spec.startsWith("./") || spec.startsWith("../")) {
+    if (
+      spec.startsWith("/") ||
+      spec.startsWith("./") ||
+      spec.startsWith("../")
+    ) {
       return new URL(spec, base).toString();
     }
     return spec;
@@ -154,6 +159,9 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
         if (!restored) {
           await this.getSyncManager().stepwise_fullsync();
         }
+      }
+      if (data.post_worker_initialized) {
+        await data.post_worker_initialized(this);
       }
     });
   }

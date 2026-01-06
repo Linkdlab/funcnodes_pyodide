@@ -1,7 +1,10 @@
 import FuncnodesPyodideWorker, {
   FuncnodesPyodideWorkerProps,
 } from "./pyodineworker";
-import { FuncNodesRenderer, WorkerProps } from "@linkdlab/funcnodes_react_flow";
+import {
+  FuncnodesReactFlowProps,
+  FuncNodesRenderer,
+} from "@linkdlab/funcnodes_react_flow";
 import "@linkdlab/funcnodes_react_flow/dist/funcnodes_react_flow.css";
 
 declare global {
@@ -12,7 +15,8 @@ declare global {
 
 const FuncnodesPyodide = (
   id_or_element: string | HTMLElement,
-  data: FuncnodesPyodideWorkerProps & WorkerProps
+  data: FuncnodesPyodideWorkerProps,
+  fn_props: Partial<FuncnodesReactFlowProps> = {}
 ) => {
   if (data.shared_worker) {
     data.shared_worker = true;
@@ -30,13 +34,15 @@ const FuncnodesPyodide = (
   }
 
   const worker = new FuncnodesPyodideWorker(data);
-
-  FuncNodesRenderer(id_or_element, {
-    useWorkerManager: false,
+  const fn_props_with_worker: Partial<FuncnodesReactFlowProps> = {
+    ...fn_props,
     worker: worker,
-    debug: data.debug,
+    useWorkerManager: false,
+    id: worker.uuid,
+    debug: data.debug || false,
     worker_url: "dummy", // dummy url as the current implementation requires one (will be removed in the next release of funcnodes_react_flow)
-  });
+  };
+  FuncNodesRenderer(id_or_element, fn_props_with_worker);
 };
 
 if (!window.FuncNodes) {

@@ -91,6 +91,9 @@ Open the printed `http://localhost:<port>` URL in a browser.
 
 The first load is expected to be slow because the WebWorker will download Pyodide and install Python packages.
 
+You can preload an example workflow export via URL, e.g.
+`?load=examples/cat.fnw`.
+
 ---
 
 ## Using it from JavaScript (embedding)

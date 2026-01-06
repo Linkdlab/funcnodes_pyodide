@@ -22,22 +22,53 @@
 
     <script >
       // wait till window is loaded
+      
+      function getParam(name, defaultValue = null) {
+        try {
+          const url = new URL(window.location.href);
+          return url.searchParams.get(name);
+        } catch (e) {
+          return defaultValue;
+        }
+      } 
+      
+
       window.onload = async function() {
 
-        // const worker = new FuncNodes.FuncnodesPyodideWorker({
-        //   shared_worker:false,
-        //   uuid:"root",
-        // });
+        let loadParam = getParam("load");
+        let exportStr = null;
+        if (loadParam && typeof localStorage !== "undefined") {
+          try {
+            const url = new URL(loadParam, window.location.href).toString();
+            console.log("preloading worker export from", url);
+            const resp = await fetch(url);
+            if (!resp.ok) {
+              console.error(`Failed to load worker export (${resp.status}) from ${url}`);
+            } else {
+              exportStr = await resp.text();
+              console.log("worker export loaded", exportStr);
+              loadParam = true;
+            }
+          } catch (e) {
+            console.error("Failed to preload worker export from URL", e);
+            loadParam = false;
+          }
+        }
 
         window.FuncNodes.FuncnodesPyodide("root",{
-          useWorkerManager:false,
-          restore_worker_state_on_load:true,
           packages:[],
-          // worker:worker,
+          restore_worker_state_on_load:!loadParam,
+          post_worker_initialized: async function(worker) {
+            if (exportStr) {
+              await worker.update_from_export(exportStr)
+            }
+          },
         });
 
-      window.addEventListener("beforeunload", async function() {
-        await fnrf_zst.root.worker.save_worker_state()
+      window.addEventListener("beforeunload", function() {
+        try {
+          fnrf_zst?.root?.worker?.save_worker_state?.();
+        } catch {}
       });
       }
 
