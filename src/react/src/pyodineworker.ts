@@ -20,6 +20,30 @@ export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   restore_worker_state_on_load?: boolean | string;
 }
 
+const normalizePackageSpecs = (
+  packages: string[] | undefined,
+  baseUrl?: string
+): string[] | undefined => {
+  if (!packages?.length) return packages;
+
+  const base =
+    baseUrl ??
+    (typeof window !== "undefined" && window.location
+      ? window.location.href
+      : undefined);
+
+  if (!base) return packages;
+
+  return packages.map((spec) => {
+    const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(spec);
+    if (hasScheme) return spec;
+    if (spec.startsWith("/") || spec.startsWith("./") || spec.startsWith("../")) {
+      return new URL(spec, base).toString();
+    }
+    return spec;
+  });
+};
+
 export const worker_from_data = (
   data: FuncnodesPyodideWorkerProps
 ): Worker | SharedWorker => {
@@ -93,7 +117,7 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       data: {
         debug: data.debug,
         pyodide_url: data.pyodide_url,
-        packages: data.packages,
+        packages: normalizePackageSpecs(data.packages, data.worker_baseurl),
       },
     });
 

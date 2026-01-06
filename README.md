@@ -18,7 +18,7 @@ This repo subtree contains *two* deliverables plus a prebuilt demo:
 
 ### 1) Python package: `funcnodes-pyodide` (AGPL-3.0)
 
-Located in `tools/funcnodes_pyodide/src/funcnodes_pyodide/`.
+Located in `src/funcnodes_pyodide/`.
 
 Key pieces:
 
@@ -33,14 +33,14 @@ Key pieces:
 
 ### 2) JavaScript/TypeScript package: `@linkdlab/funcnodes_pyodide_react_flow` (MIT)
 
-Located in `tools/funcnodes_pyodide/src/react/`.
+Located in `src/react/`.
 
 Key pieces:
 
 - `FuncnodesPyodideWorker` (`src/react/src/pyodineworker.ts`)
   - A `@linkdlab/funcnodes_react_flow`-compatible worker implementation.
   - Talks to a (Shared)WebWorker that runs the Pyodide runtime + Python worker.
-- Web Worker runtime (`src/react/src/pyodideWorkerLogic.mts`, `pyodideWorkerLayout.mts`)
+- Web Worker runtime (`src/react/src/pyodideWorkerLogic.mts`, `src/react/src/pyodideWorkerLayout.mts`)
   - Loads Pyodide via dynamic `import(...)`.
   - Uses `micropip` to install Python packages at runtime.
   - Imports `funcnodes_pyodide`, creates Python worker instances via `funcnodes_pyodide.new_worker(...)`,
@@ -48,7 +48,7 @@ Key pieces:
 
 ### 3) Prebuilt static demo bundle
 
-Located in `tools/funcnodes_pyodide/src/funcnodes_pyodide/static/` and includes:
+Located in `src/funcnodes_pyodide/static/` and includes:
 
 - `index.html`
 - `funcnodes_pyodide_react_flow.es.js` (+ `.iife.js`)
@@ -84,7 +84,7 @@ From this repo (this folder contains its own `uv.lock`):
 ```bash
 cd tools/funcnodes_pyodide
 UV_CACHE_DIR=.cache/uv uv sync
-UV_CACHE_DIR=.cache/uv uv run python -m funcnodes_pyodide
+FUNCNODES_CONFIG_DIR=.funcnodes UV_CACHE_DIR=.cache/uv uv run python -m funcnodes_pyodide
 ```
 
 Open the printed `http://localhost:<port>` URL in a browser.
@@ -100,9 +100,29 @@ The build registers a few helpers on `window.FuncNodes` (which is a function exp
 - `window.FuncNodes.FuncnodesPyodideWorker` — the JS worker class
 - `window.FuncNodes.FuncnodesPyodide(...)` — helper to mount the UI with a Pyodide worker
 
-### Minimal “static HTML” integration
+### Recommended: `FuncnodesPyodide(...)`
 
-This is essentially what `src/funcnodes_pyodide/static/index.html` does:
+This is the recommended API when using the prebuilt browser bundle:
+
+```html
+<div id="root" style="height: 100vh"></div>
+<script type="module" src="./funcnodes_pyodide_react_flow.es.js"></script>
+<link rel="stylesheet" href="./funcnodes_pyodide_react_flow.css" />
+<script type="module">
+  window.FuncNodes.FuncnodesPyodide("root", {
+    useWorkerManager: false,
+    debug: true,
+    // pyodide_url: "https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.mjs",
+    // packages: ["https://example.com/your.whl"],
+    // restore_worker_state_on_load: true,
+  });
+</script>
+```
+
+### Advanced: construct a `FuncnodesPyodideWorker` yourself
+
+This gives you direct access to the worker instance (for example to call
+`save_worker_state()`).
 
 ```html
 <div id="root" style="height: 100vh"></div>
@@ -112,8 +132,6 @@ This is essentially what `src/funcnodes_pyodide/static/index.html` does:
   const worker = new window.FuncNodes.FuncnodesPyodideWorker({
     uuid: "root",
     shared_worker: false,
-    // pyodide_url: "https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.mjs",
-    // packages: ["funcnodes-basic==..."],
   });
 
   window.FuncNodes("root", {
@@ -138,7 +156,7 @@ This is essentially what `src/funcnodes_pyodide/static/index.html` does:
 
 ## Where this is used in the FuncNodes ecosystem
 
-FuncNodes’ own documentation site embeds live graphs that run fully in-browser using this package (see `backend/FuncNodes/docs/mkdocs.yml` and `backend/FuncNodes/docs/content/static/js/basic_funcnodes_pyodide.js`).
+FuncNodes’ documentation site can embed live graphs that run fully in-browser using this package.
 
 ---
 
@@ -149,6 +167,43 @@ FuncNodes’ own documentation site embeds live graphs that run fully in-browser
 - **Concurrency constraints**: Pyodide does not provide CPython-style multiprocessing, and browser threading constraints apply. Heavy CPU work can freeze the worker.
 - **File system semantics**: Pyodide’s filesystem is virtual/in-memory unless you explicitly mount persistent storage; file-based logging is disabled by `funcnodes_pyodide.patch`.
 - **Interrupt support is best-effort**: the WebWorker tries to use `SharedArrayBuffer` for interrupts, but this requires cross-origin isolation headers (COOP/COEP) and isn’t available everywhere.
+
+---
+
+## Development: using local Python changes in the browser
+
+By default, the Pyodide worker installs `funcnodes-pyodide` from PyPI via
+`micropip`. For local development you typically want to install a wheel
+built from your working tree instead.
+
+1) Build a wheel:
+
+```bash
+cd tools/funcnodes_pyodide
+UV_CACHE_DIR=.cache/uv uv build --wheel
+```
+
+2) Copy the wheel into the React dev server `public/` folder (keep the
+original filename, don’t rename it):
+
+```bash
+mkdir -p src/react/public/pywheels
+cp dist/*.whl src/react/public/pywheels/
+```
+
+3) Point `packages` at the served wheel URL:
+
+```js
+const wheelUrl = `${window.location.origin}/pywheels/funcnodes_pyodide-<version>-py3-none-any.whl?t=${Date.now()}`;
+window.FuncNodes.FuncnodesPyodide("root", { packages: [wheelUrl] });
+```
+
+Notes:
+
+- `micropip` downloads via `http(s)`; a plain `/pywheels/...` path may be
+  interpreted as a non-remote URL depending on where it’s constructed.
+- This repo’s JS worker code normalizes common relative/absolute paths to
+  absolute URLs before sending them to the worker.
 
 ---
 
@@ -167,11 +222,13 @@ FUNCNODES_CONFIG_DIR=.funcnodes UV_CACHE_DIR=.cache/uv uv run pytest
 ```bash
 cd tools/funcnodes_pyodide/src/react
 yarn install
+yarn watch
 yarn test
 yarn build
 ```
 
-`yarn build` writes a production browser bundle into `tools/funcnodes_pyodide/src/funcnodes_pyodide/static/` (see `vite.browser.config.js`), which is what `python -m funcnodes_pyodide` serves.
+`yarn build` writes a production browser bundle into `src/funcnodes_pyodide/static/`
+(see `vite.browser.config.js`), which is what `python -m funcnodes_pyodide` serves.
 
 ---
 

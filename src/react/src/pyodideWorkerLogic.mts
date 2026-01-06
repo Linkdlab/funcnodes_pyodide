@@ -173,11 +173,9 @@ globalThis.initializePyodide = async (): Promise<{
 
     const loadPyodide = pyodideModule.loadPyodide as typeof loadPyodideType;
     // index url is the folder of workerState.pyodide_url (which points to .../pyodide.mjs)
-    const indexURL = globalThis.workerState.pyodide_url
-      .split("/")
-      .slice(0, -1)
-      .join("/");
-    console.log(indexURL);
+    const pyodideUrl = new URL(globalThis.workerState.pyodide_url);
+    const indexURL = new URL(".", pyodideUrl).toString();
+    if (globalThis.workerState.debug) console.debug("Pyodide indexURL:", indexURL);
 
     globalThis.workerState.pyodide = await (
       loadPyodide as typeof loadPyodideType
@@ -211,8 +209,20 @@ globalThis.initializePyodide = async (): Promise<{
   await globalThis.workerState.micropip.install("funcnodes");
   globalThis.workerState.state.msg = "Installing funcnodes-worker";
   await globalThis.workerState.micropip.install("funcnodes-worker");
-  globalThis.workerState.state.msg = "Installing funcnodes-pyodide";
-  await globalThis.workerState.micropip.install("funcnodes-pyodide");
+
+  const hasFuncnodesPyodideWheel = globalThis.workerState.packages.some(
+    (spec) =>
+      spec.toLowerCase().endsWith(".whl") && spec.includes("funcnodes_pyodide")
+  );
+
+  if (!hasFuncnodesPyodideWheel) {
+    globalThis.workerState.state.msg = "Installing funcnodes-pyodide";
+    await globalThis.workerState.micropip.install("funcnodes-pyodide");
+  } else if (globalThis.workerState.debug) {
+    console.debug(
+      "Skipping PyPI funcnodes-pyodide install (wheel provided in packages)"
+    );
+  }
   globalThis.workerState.state.msg = "Installing funcnodes-react-flow";
   await globalThis.workerState.micropip.install("funcnodes-react-flow");
   globalThis.workerState.state.msg = "Importing funcnodes";
