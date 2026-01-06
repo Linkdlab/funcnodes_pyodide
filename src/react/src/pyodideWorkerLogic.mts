@@ -393,6 +393,28 @@ globalThis.receivepy_bytes = (
 
     if (data.msg === undefined) return;
 
+    let bytes: unknown = data.msg;
+    const bytesProxy = bytes as { toJs?: (opts?: any) => unknown };
+    if (bytesProxy && typeof bytesProxy.toJs === "function") {
+      try {
+        bytes = bytesProxy.toJs({ dict_converter: Object.fromEntries });
+      } catch {
+        bytes = bytesProxy.toJs();
+      }
+    }
+    if (bytes instanceof ArrayBuffer) {
+      bytes = new Uint8Array(bytes);
+    }
+    if (Array.isArray(bytes)) {
+      bytes = Uint8Array.from(bytes as number[]);
+    }
+    if (!(bytes instanceof Uint8Array)) {
+      throw new Error(
+        `receivepy_bytes expected Uint8Array payload, got ${typeof bytes}`
+      );
+    }
+    data.msg = bytes;
+
     if (kwargs !== undefined) {
       if (typeof kwargs === "string") {
         if (!data.worker_id) {
@@ -414,7 +436,7 @@ globalThis.receivepy_bytes = (
       );
       return;
     }
-    globalThis.workerState.receivepy_bytes(msg as Uint8Array, worker_id);
+    globalThis.workerState.receivepy_bytes(data.msg as Uint8Array, worker_id);
   } catch (e) {
     console.error("Error during receivepy_bytes:", e);
     return;
