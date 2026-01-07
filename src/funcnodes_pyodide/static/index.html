@@ -78,11 +78,8 @@
         window.FuncNodes.FuncnodesPyodide("root",{
           packages:[],
           restore_worker_state_on_load:!shouldPreload,
-          post_worker_initialized: async function(worker) {
-            if (exportStr) {
-              await worker.update_from_export(exportStr)
-            }
-          },
+        },{
+          fnw_url: shouldPreload?loadParam:undefined
         });
 
       window.addEventListener("beforeunload", function() {
