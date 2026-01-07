@@ -155,11 +155,8 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
             ? data.restore_worker_state_on_load
             : this._storage_key();
         const restored = await this.restore_worker_state(key);
-
-        if (!restored) {
-          await this.getSyncManager().stepwise_fullsync();
-        }
       }
+      await this.getSyncManager().stepwise_fullsync();
       if (data.post_worker_initialized) {
         await data.post_worker_initialized(this);
       }
