@@ -59,7 +59,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git restore -- src/react/yarn.lock
           git add .
-      
+          git status
 
           if ! git diff-index --quiet HEAD; then
             git commit -m "chore: update build files [skip ci]"
