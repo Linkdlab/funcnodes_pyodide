@@ -25,6 +25,12 @@ jobs:
       - name: Enable corepack
         run: corepack enable
 
+      - name: Use pinned Yarn
+        working-directory: src/react
+        run: |
+          corepack install
+          yarn --version
+
       # Set up Node.js and cache yarn dependencies.
       - name: Set up Node.js
         uses: actions/setup-node@v3
