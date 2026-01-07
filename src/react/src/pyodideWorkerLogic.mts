@@ -8,7 +8,7 @@
 import { loadPyodide as loadPyodideType, PyodideInterface } from "pyodide";
 
 const __DEFAULT_PYODIDE_URL__ =
-  "https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.mjs";
+  "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.mjs";
 
 // Assume PYCODE is provided via a bundler or global constant.
 
@@ -173,11 +173,10 @@ globalThis.initializePyodide = async (): Promise<{
 
     const loadPyodide = pyodideModule.loadPyodide as typeof loadPyodideType;
     // index url is the folder of workerState.pyodide_url (which points to .../pyodide.mjs)
-    const indexURL = globalThis.workerState.pyodide_url
-      .split("/")
-      .slice(0, -1)
-      .join("/");
-    console.log(indexURL);
+    const pyodideUrl = new URL(globalThis.workerState.pyodide_url);
+    const indexURL = new URL(".", pyodideUrl).toString();
+    if (globalThis.workerState.debug)
+      console.debug("Pyodide indexURL:", indexURL);
 
     globalThis.workerState.pyodide = await (
       loadPyodide as typeof loadPyodideType
@@ -211,8 +210,20 @@ globalThis.initializePyodide = async (): Promise<{
   await globalThis.workerState.micropip.install("funcnodes");
   globalThis.workerState.state.msg = "Installing funcnodes-worker";
   await globalThis.workerState.micropip.install("funcnodes-worker");
-  globalThis.workerState.state.msg = "Installing funcnodes-pyodide";
-  await globalThis.workerState.micropip.install("funcnodes-pyodide");
+
+  const hasFuncnodesPyodideWheel = globalThis.workerState.packages.some(
+    (spec) =>
+      spec.toLowerCase().endsWith(".whl") && spec.includes("funcnodes_pyodide")
+  );
+
+  if (!hasFuncnodesPyodideWheel) {
+    globalThis.workerState.state.msg = "Installing funcnodes-pyodide";
+    await globalThis.workerState.micropip.install("funcnodes-pyodide");
+  } else if (globalThis.workerState.debug) {
+    console.debug(
+      "Skipping PyPI funcnodes-pyodide install (wheel provided in packages)"
+    );
+  }
   globalThis.workerState.state.msg = "Installing funcnodes-react-flow";
   await globalThis.workerState.micropip.install("funcnodes-react-flow");
   globalThis.workerState.state.msg = "Importing funcnodes";
@@ -360,16 +371,49 @@ globalThis.receivepy_bytes = (
   msg: receivepyBytesMsgType,
   kwargs: receivepyBytesKwargsType
 ) => {
-  msg = (msg as unknown as any).toJs();
+  let normalizedMsg: unknown = msg;
+  const maybeProxy = msg as unknown as { toJs?: (opts?: any) => unknown };
+  if (maybeProxy && typeof maybeProxy.toJs === "function") {
+    try {
+      normalizedMsg = maybeProxy.toJs({ dict_converter: Object.fromEntries });
+    } catch {
+      normalizedMsg = maybeProxy.toJs();
+    }
+  }
+  if (normalizedMsg instanceof Map) {
+    normalizedMsg = Object.fromEntries(normalizedMsg.entries());
+  }
   try {
     let data: Partial<receivepyBytesParams> = {};
-    if (msg instanceof Uint8Array) {
-      data.msg = msg;
+    if (normalizedMsg instanceof Uint8Array) {
+      data.msg = normalizedMsg;
     } else {
-      data = msg;
+      data = normalizedMsg as Partial<receivepyBytesParams>;
     }
 
     if (data.msg === undefined) return;
+
+    let bytes: unknown = data.msg;
+    const bytesProxy = bytes as { toJs?: (opts?: any) => unknown };
+    if (bytesProxy && typeof bytesProxy.toJs === "function") {
+      try {
+        bytes = bytesProxy.toJs({ dict_converter: Object.fromEntries });
+      } catch {
+        bytes = bytesProxy.toJs();
+      }
+    }
+    if (bytes instanceof ArrayBuffer) {
+      bytes = new Uint8Array(bytes);
+    }
+    if (Array.isArray(bytes)) {
+      bytes = Uint8Array.from(bytes as number[]);
+    }
+    if (!(bytes instanceof Uint8Array)) {
+      throw new Error(
+        `receivepy_bytes expected Uint8Array payload, got ${typeof bytes}`
+      );
+    }
+    data.msg = bytes;
 
     if (kwargs !== undefined) {
       if (typeof kwargs === "string") {
@@ -392,7 +436,7 @@ globalThis.receivepy_bytes = (
       );
       return;
     }
-    globalThis.workerState.receivepy_bytes(msg as Uint8Array, worker_id);
+    globalThis.workerState.receivepy_bytes(data.msg as Uint8Array, worker_id);
   } catch (e) {
     console.error("Error during receivepy_bytes:", e);
     return;

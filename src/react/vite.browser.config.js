@@ -6,7 +6,7 @@ import path from "path";
 export default defineConfig(({ mode }) => {
   const production = mode === "production";
 
-  // laod version number from package.json
+  // load version number from package.json
   const pkg = require("./package.json");
   const version = pkg.version;
   const basename = pkg.name.replace(/@.*\//, "");

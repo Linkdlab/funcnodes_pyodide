@@ -1,7 +1,6 @@
-from funcnodes_core.config import update_config
+def patch() -> None:
+    from funcnodes_core.config import update_config
 
-
-def patch():
     update_config({"logging": {"handler": {"file": False}}})
     # import here to avoid circular import
     from funcnodes_core._logging import (

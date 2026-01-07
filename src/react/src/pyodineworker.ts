@@ -17,7 +17,37 @@ export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
     Shared: new (options?: { name?: string }) => SharedWorker;
     Dedicated: new (options?: { name?: string }) => Worker;
   };
+  restore_worker_state_on_load?: boolean | string;
+  post_worker_initialized?: (worker: FuncnodesPyodideWorker) => Promise<void>;
 }
+
+const normalizePackageSpecs = (
+  packages: string[] | undefined,
+  baseUrl?: string
+): string[] | undefined => {
+  if (!packages?.length) return packages;
+
+  const base =
+    baseUrl ??
+    (typeof window !== "undefined" && window.location
+      ? window.location.href
+      : undefined);
+
+  if (!base) return packages;
+
+  return packages.map((spec) => {
+    const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(spec);
+    if (hasScheme) return spec;
+    if (
+      spec.startsWith("/") ||
+      spec.startsWith("./") ||
+      spec.startsWith("../")
+    ) {
+      return new URL(spec, base).toString();
+    }
+    return spec;
+  });
+};
 
 export const worker_from_data = (
   data: FuncnodesPyodideWorkerProps
@@ -92,27 +122,44 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       data: {
         debug: data.debug,
         pyodide_url: data.pyodide_url,
-        packages: data.packages,
+        packages: normalizePackageSpecs(data.packages, data.worker_baseurl),
       },
     });
 
-    const stateinterval = setInterval(() => {
+    const state_interval = setInterval(() => {
       this.postMessage({ cmd: "state" });
     }, 400);
 
     this._workerstate = { loaded: false, msg: "loading", progress: 0 };
     this.initPromise = new Promise<void>(async (resolve) => {
       while (!this._workerstate.loaded) {
+        this._zustand?.set_progress({
+          message: this._workerstate.msg,
+          status: "info",
+          progress: this._workerstate.progress,
+          blocking: true,
+        });
+
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      clearInterval(stateinterval);
+      clearInterval(state_interval);
       this.is_open = true;
       this._zustand?.auto_progress();
       resolve();
     });
 
-    this.initPromise.then(() => {
-      this.stepwise_fullsync();
+    this.initPromise.then(async () => {
+      if (data.restore_worker_state_on_load) {
+        const key =
+          typeof data.restore_worker_state_on_load === "string"
+            ? data.restore_worker_state_on_load
+            : this._storage_key();
+        await this.restore_worker_state(key);
+      }
+      await this.getSyncManager().stepwise_fullsync();
+      if (data.post_worker_initialized) {
+        await data.post_worker_initialized(this);
+      }
     });
   }
 
@@ -175,12 +222,13 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
           throw new Error("worker_id is undefined");
         }
         if (event.data.worker_id === this.uuid)
-          this.receive(JSON.parse(event.data.msg));
+          this.getCommunicationManager().receive(JSON.parse(event.data.msg));
       } else if (event.data.cmd === "receive_bytes") {
         if (event.data.worker_id === undefined) {
           throw new Error("worker_id is undefined");
         }
-        if (event.data.worker_id === this.uuid) this.onbytes(event.data.msg);
+        if (event.data.worker_id === this.uuid)
+          this.getCommunicationManager().onbytes(event.data.msg);
       }
     }
   }
@@ -209,8 +257,8 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
             const data = (
               (event.target as FileReader).result as string
             )?.replace(/^data:.+;base64,/, "");
-            const subtarget = file.webkitRelativePath || file.name;
-            const target = root ? `${root}/${subtarget}` : subtarget;
+            const sub_target = file.webkitRelativePath || file.name;
+            const target = root ? `${root}/${sub_target}` : sub_target;
             const ans = await this._send_cmd({
               cmd: "upload",
               kwargs: { data: data, filename: target },
@@ -229,12 +277,12 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       });
       promises.push(promise);
     }
-    const fileresults = await Promise.all(promises);
+    const file_results = await Promise.all(promises);
     // get common root
-    const common_root = fileresults.reduce((acc, val) => {
+    const common_root = file_results.reduce((acc, val) => {
       const split = val.split("/");
       const split_acc = acc.split("/");
-      const common = [];
+      const common: string[] = [];
       for (let i = 0; i < split.length; i++) {
         if (split[i] === split_acc[i]) {
           common.push(split[i]);
@@ -243,14 +291,59 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
         }
       }
       return common.join("/");
-    }, fileresults[0]);
+    }, file_results[0]);
     return common_root;
   }
 
   get ready() {
     return this._workerstate.loaded;
   }
+
+  private _storage_key(): string {
+    return `funcnodes_pyodide:worker_export:${this.uuid}`;
+  }
+
+  private _has_local_storage(): boolean {
+    try {
+      return typeof globalThis !== "undefined" && "localStorage" in globalThis;
+    } catch {
+      return false;
+    }
+  }
+
+  async save_worker_state({ withFiles = true } = {}): Promise<string> {
+    const resp = await this.export({ withFiles });
+    const export_str =
+      typeof resp === "string" ? resp : (resp?.data as string | undefined);
+
+    if (typeof export_str !== "string") {
+      throw new Error("export_worker did not return a string export");
+    }
+
+    if (this._has_local_storage()) {
+      globalThis.localStorage.setItem(this._storage_key(), export_str);
+    }
+
+    return export_str;
+  }
+
+  async restore_worker_state(key?: string): Promise<boolean> {
+    if (!this._has_local_storage()) return false;
+
+    const export_str = globalThis.localStorage.getItem(
+      key || this._storage_key()
+    );
+    if (!export_str) return false;
+
+    try {
+      await this.update_from_export(export_str);
+      return true;
+    } catch (e) {
+      console.warn("Failed to restore worker state from storage", e);
+      return false;
+    }
+  }
 }
 
 export default FuncnodesPyodideWorker;
-// export { intitalize_pyodide_worker };
+// export { initialize_pyodide_worker };

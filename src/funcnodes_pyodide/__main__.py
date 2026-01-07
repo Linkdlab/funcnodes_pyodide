@@ -8,10 +8,12 @@ def find_free_port():
     import socket
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("localhost", 0))
-    addr, port = s.getsockname()
-    s.close()
-    return port
+    try:
+        s.bind(("localhost", 0))
+        _addr, port = s.getsockname()
+        return port
+    finally:
+        s.close()
 
 
 def serve():
