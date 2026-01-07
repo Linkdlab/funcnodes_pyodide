@@ -57,8 +57,9 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git reset src/react/yarn.lock
           git add .
+          git reset src/react/yarn.lock
+          
           if ! git diff-index --quiet HEAD; then
             git commit -m "chore: update build files [skip ci]"
             echo "changes_committed=true" >> $GITHUB_OUTPUT
