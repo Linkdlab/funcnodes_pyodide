@@ -13,4 +13,3 @@ def test_worker_get_info_includes_sorted_packages():
     assert isinstance(packages, list)
     assert packages == sorted(packages, key=lambda p: p["name"])
     assert all(isinstance(p, dict) and "name" in p and "version" in p for p in packages)
-

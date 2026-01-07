@@ -1,6 +1,7 @@
 import pytest
 from pytest_funcnodes import funcnodes_test
 
+
 @pytest.mark.imports
 @funcnodes_test(disable_file_handler=False)
 def test_patch_is_idempotent():
@@ -12,4 +13,3 @@ def test_patch_is_idempotent():
 
     assert len(FUNCNODES_LOGGER.handlers) == 1
     assert [h.name for h in FUNCNODES_LOGGER.handlers] == ["console"]
-

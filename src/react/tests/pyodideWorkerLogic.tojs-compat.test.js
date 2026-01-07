@@ -20,4 +20,3 @@ test("pyodide worker logic normalizes PyProxy payloads for receivepy_bytes", () 
     "expected receivepy_bytes to force dict conversion to plain objects"
   );
 });
-

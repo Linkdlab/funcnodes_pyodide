@@ -5,8 +5,9 @@ if sys.platform == "emscripten":
     from .patch import patch
 
     patch()
-    
+
 from .worker import PyodideWorker
+
 
 async def new_worker(*args, **kwargs):
     worker = PyodideWorker(*args, **kwargs)
