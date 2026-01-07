@@ -21,4 +21,3 @@ test("pyodide worker logic forwards normalized bytes to workerState.receivepy_by
     "expected receivepy_bytes to avoid forwarding the original proxy msg to workerState.receivepy_bytes"
   );
 });
-

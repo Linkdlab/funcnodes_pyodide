@@ -15,4 +15,3 @@ test("pyodide worker logic defaults to Pyodide v0.29.0", () => {
     "expected the default pyodide.mjs URL to point at v0.29.0"
   );
 });
-

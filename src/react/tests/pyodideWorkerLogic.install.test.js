@@ -23,4 +23,3 @@ test("pyodide worker logic skips PyPI funcnodes-pyodide when wheel provided", ()
     "expected conditional logic to avoid reinstalling from PyPI when a wheel is supplied"
   );
 });
-

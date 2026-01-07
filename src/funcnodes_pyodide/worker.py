@@ -44,7 +44,10 @@ class PyodideWorker(RemoteWorker):
         from importlib import metadata
 
         packages = sorted(
-            ({"name": dist.name, "version": dist.version} for dist in metadata.distributions()),
+            (
+                {"name": dist.name, "version": dist.version}
+                for dist in metadata.distributions()
+            ),
             key=lambda p: p["name"],
         )
         return {
