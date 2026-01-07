@@ -17,17 +17,7 @@ test("index.html supports ?load=... to preload worker state from a .fnw file", (
   );
 
   assert.ok(
-    source.includes("fetch("),
-    "expected index.html to fetch the referenced export file"
-  );
-
-  assert.ok(
-    source.includes("arrayBuffer") && source.includes("btoa("),
-    "expected index.html to base64-encode binary exports"
-  );
-
-  assert.ok(
-    source.includes("update_from_export("),
-    "expected index.html to apply the loaded export via update_from_export()"
+    source.includes("fnw_url: shouldPreload?loadParam:undefined"),
+    "expected index.html to apply the loaded export via fnw_url"
   );
 });
