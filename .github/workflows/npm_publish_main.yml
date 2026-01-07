@@ -1,0 +1,99 @@
+# Publish React packages to npm when main/master is updated.
+name: npm_publish
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  npm_publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      WORKSPACE_ROOT: src/react
+      NODE_VERSION: "24"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org
+          cache: yarn
+          cache-dependency-path: src/react/yarn.lock
+
+      - name: Read package versions
+        id: read_versions
+        run: |
+          PYODIDE_VERSION=$(jq -r .version src/react/package.json)
+          echo "pyodide_version=${PYODIDE_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Get published versions from npm
+        id: registry_versions
+        run: |
+          PYODIDE_PUBLISHED=$(npm view @linkdlab/funcnodes_pyodide_react_flow version 2>/dev/null || echo "0.0.0")
+          echo "pyodide_published=${PYODIDE_PUBLISHED}" >> $GITHUB_OUTPUT
+
+      - name: Decide publish plan
+        id: publish_plan
+        run: |
+          PYODIDE_VERSION="${{ steps.read_versions.outputs.pyodide_version }}"
+          PYODIDE_PUBLISHED="${{ steps.registry_versions.outputs.pyodide_published }}"
+
+          PUBLISH_PYODIDE=$([ "$PYODIDE_VERSION" != "$PYODIDE_PUBLISHED" ] && echo true || echo false)
+
+          echo "publish_pyodide=${PUBLISH_PYODIDE}" >> $GITHUB_OUTPUT
+
+          if [ "$PUBLISH_PYODIDE" = true ]; then
+            echo "should_publish_any=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_publish_any=false" >> $GITHUB_OUTPUT
+            echo "No package version changes detected; skipping publish." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Install dependencies
+        if: steps.publish_plan.outputs.should_publish_any == 'true'
+        working-directory: ${{ env.WORKSPACE_ROOT }}
+        run: yarn install --immutable
+
+      - name: Build packages
+        if: steps.publish_plan.outputs.should_publish_any == 'true'
+        working-directory: ${{ env.WORKSPACE_ROOT }}
+        run: yarn build
+
+      - name: Test funcnodes-pyodide-react-flow
+        working-directory: ${{ env.WORKSPACE_ROOT }}
+        run: yarn test
+
+      - name: Publish @linkdlab/funcnodes_pyodide_react_flow
+        if: steps.publish_plan.outputs.publish_pyodide == 'true'
+        working-directory: ${{ env.WORKSPACE_ROOT }}
+        env:
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org
+        run: |
+          npm publish --access public --tag latest --provenance
+
+      - name: Create git tag for funcnodes-pyodide-react-flow
+        if: steps.publish_plan.outputs.publish_pyodide == 'true'
+        run: |
+          TAG="pyodide-react-flow-v${{ steps.read_versions.outputs.pyodide_version }}"
+          git config --local user.name "${GITHUB_ACTOR}"
+          git config --local user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, skipping."
+          else
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+          fi

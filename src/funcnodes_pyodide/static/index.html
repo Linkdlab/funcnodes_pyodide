@@ -18,27 +18,52 @@
   </head>
   <body style="margin: 0;">
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root" style="height: 100vh; width: 100%; padding:40px; box-sizing:border-box;">
+    <div id="root" style="height: 100vh; width: 100%; box-sizing:border-box;">
     </div>
 
     <script >
       // wait till window is loaded
+
+      function getParam(name, defaultValue = null) {
+        try {
+          const url = new URL(window.location.href);
+          return url.searchParams.get(name);
+        } catch (e) {
+          return defaultValue;
+        }
+      }
+
+
       window.onload = async function() {
 
-        const worker = new FuncNodes.FuncnodesPyodideWorker({
-          shared_worker:false,
-          uuid:"root",
+        function arrayBufferToBase64(buffer) {
+          const bytes = new Uint8Array(buffer);
+          let binary = "";
+          const chunkSize = 0x8000;
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+          }
+          return btoa(binary);
+        }
+
+        const loadParam = getParam("load");
+        const shouldPreload = typeof loadParam === "string" && loadParam.length > 0;
+
+        window.FuncNodes.FuncnodesPyodide("root",{
+          packages:[],
+          restore_worker_state_on_load:!shouldPreload,
+        },{
+          fnw_url: shouldPreload?loadParam:undefined
         });
 
-        window.FuncNodes("root",{
-          useWorkerManager:false,
-          worker:worker,
-        });
+      window.addEventListener("beforeunload", function() {
+        try {
+          fnrf_zst?.root?.worker?.save_worker_state?.();
+        } catch {}
+      });
       }
 
 
     </script>
   </body>
-
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js"></script>
 </html>
