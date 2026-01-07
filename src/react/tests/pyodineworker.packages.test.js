@@ -21,4 +21,3 @@ test("pyodineworker normalizes package URLs before init", () => {
     "expected packages to be normalized via URL resolution in the browser"
   );
 });
-
