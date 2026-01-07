@@ -18755,23 +18755,23 @@ export default theme;`;
       n === "padding" && "padding-right: ".concat(s, "px ").concat(r, ";")
     ].filter(Boolean).join(""), `
   }
-
+  
   .`).concat(Py, ` {
     right: `).concat(s, "px ").concat(r, `;
   }
-
+  
   .`).concat(Oy, ` {
     margin-right: `).concat(s, "px ").concat(r, `;
   }
-
+  
   .`).concat(Py, " .").concat(Py, ` {
     right: 0 `).concat(r, `;
   }
-
+  
   .`).concat(Oy, " .").concat(Oy, ` {
     margin-right: 0 `).concat(r, `;
   }
-
+  
   body[`).concat(td, `] {
     `).concat(QZ, ": ").concat(s, `px;
   }
@@ -30246,7 +30246,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
   }, ZA = 2e3, e$ = 2e3;
   class Qce extends ts {
     constructor(t) {
-      super(t), this._local_nodeupdates = /* @__PURE__ */ new Map(), this._local_groupupdates = /* @__PURE__ */ new Map(), this.on_sync_complete = t.on_sync_complete || (async () => {
+      super(t), this._local_nodeupdates = /* @__PURE__ */ new Map(), this._local_groupupdates = /* @__PURE__ */ new Map(), this._after_next_sync = [], this.on_sync_complete = t.on_sync_complete || (async () => {
       });
     }
     start() {
@@ -30260,7 +30260,19 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
       this._nodeupdatetimer && clearTimeout(this._nodeupdatetimer), this._groupupdatetimer && clearTimeout(this._groupupdatetimer);
     }
     async stepwise_fullsync() {
-      this.context.worker._zustand && this.context.worker.is_open && (await this.sync_lib(), await this.sync_external_worker(), await this.sync_funcnodes_plugins(), await this.sync_nodespace(), await this.sync_view_state(), await this.on_sync_complete(this.context.worker));
+      if (!this.context.worker._zustand || !this.context.worker.is_open) return;
+      await this.sync_lib(), await this.sync_external_worker(), await this.sync_funcnodes_plugins(), await this.sync_nodespace(), await this.sync_view_state(), await this.on_sync_complete(this.context.worker);
+      const t = this._after_next_sync.splice(0);
+      for (const n of t)
+        await n(this.context.worker), this._after_next_sync.includes(n) && this._after_next_sync.splice(this._after_next_sync.indexOf(n), 1);
+    }
+    add_after_next_sync(t) {
+      this._after_next_sync.push(t);
+    }
+    remove_after_next_sync(t) {
+      this._after_next_sync = this._after_next_sync.filter(
+        (n) => n !== t
+      );
     }
     async sync_lib() {
       if (!this.context.worker._zustand || !this.context.worker.is_open) return;
@@ -73600,8 +73612,8 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
   }) => {
     const [t, n] = C.useState(!1), r = () => n(!t), o = 150, a = e.description.length > o ? e.description.substring(0, o) + "..." : e.description;
     return /* @__PURE__ */ S.jsxs("div", { className: "module-description", children: [
-      /* @__PURE__ */ S.jsx(HFe, { remarkPlugins: [rze], children: t ? e.description.replace(/\\n/g, `
-`) : a.replace(/\\n/g, `
+      /* @__PURE__ */ S.jsx(HFe, { remarkPlugins: [rze], children: t ? e.description.replace(/\\n/g, `  
+`) : a.replace(/\\n/g, `  
 `) }),
       e.description.length > o && /* @__PURE__ */ S.jsx("button", { onClick: r, className: "toggle-description", children: t ? "Show less" : "Show more" })
     ] });
@@ -74721,11 +74733,9 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
       } else
         o(s), s.options.debug = t.debug;
     }, [t?.id, t?.debug]), C.useEffect(() => {
-      if (!(!t || !r) && !(t.useWorkerManager || !t.worker_url))
-        if (t.logger?.debug("Worker effect running"), t.worker) {
-          t.worker.set_zustand(r);
-          return;
-        } else {
+      if (!(!t || !r) && !(t.useWorkerManager || // a) a worker manager is used
+      !t.worker_url && !t.worker))
+        if (t.logger?.debug("Worker effect running"), !t.worker && t.worker_url) {
           t.logger?.debug("Creating WebSocket worker");
           const s = new W8({
             url: t.worker_url,
@@ -74737,6 +74747,9 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
           ), () => {
             t.logger?.debug("Disconnecting worker"), s.disconnect(), n((u) => u && { ...u, worker: void 0 });
           };
+        } else {
+          t.worker?.set_zustand(r);
+          return;
         }
     }, [
       t?.worker_url,
@@ -74748,21 +74761,23 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
       if (!t?.fnw_url || !t.worker) return;
       t.logger?.debug("Loading fnw_url data");
       let s = !1;
-      const u = t.worker.getSyncManager().on_sync_complete;
+      const u = t.worker.getSyncManager();
+      let c;
       return (async () => {
         try {
-          const c = await xG(t.fnw_url);
-          !s && t.worker && (t.worker.getSyncManager().on_sync_complete = async (f) => {
-            await f.update_from_export(c), t.worker.getSyncManager().on_sync_complete = u, u && u(f);
-          });
-        } catch (c) {
-          c instanceof Error ? t.logger?.error("Failed to load fnw_url:", c) : t.logger?.error(
+          const f = await xG(t.fnw_url);
+          if (s) return;
+          c = async (p) => {
+            s || await p.update_from_export(f);
+          }, u.add_after_next_sync(c);
+        } catch (f) {
+          f instanceof Error ? t.logger?.error("Failed to load fnw_url:", f) : t.logger?.error(
             "Failed to load fnw_url:",
-            new Error(String(c))
+            new Error(String(f))
           );
         }
       })(), () => {
-        s = !0, t.worker && (t.worker.getSyncManager().on_sync_complete = u);
+        s = !0, c && u.remove_after_next_sync(c);
       };
     }, [t?.fnw_url, t?.worker]), C.useEffect(() => {
       if (!t || !r || !t.useWorkerManager) return;
@@ -74830,7 +74845,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
     );
   };
   window.FuncNodes = Vx;
-  window.FuncNodes.version = "2.2.0";
+  window.FuncNodes.version = "2.2.1a0";
   window.FuncNodes.utils = {
     logger: {
       ConsoleLogger: UE,

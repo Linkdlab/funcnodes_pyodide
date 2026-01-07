@@ -690,7 +690,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@linkdlab/funcnodes_pyodide_react_flow@workspace:."
   dependencies:
-    "@linkdlab/funcnodes_react_flow": "npm:^2.2.0"
+    "@linkdlab/funcnodes_react_flow": "npm:^2.2.1-a0"
     "@types/react": "npm:^19.2.7"
     "@types/react-dom": "npm:^19.2.3"
     "@types/uuid": "npm:^11.0.0"
@@ -703,16 +703,16 @@ __metadata:
     vite: "npm:^7.3.0"
     vite-plugin-dts: "npm:^4.5.4"
   peerDependencies:
-    "@linkdlab/funcnodes_react_flow": ^2.2.0
+    "@linkdlab/funcnodes_react_flow": ^2.2.1-a0
     pyodide: ^0.29.0
     react: ^19.2.3
     react-dom: ^19.2.3
   languageName: unknown
   linkType: soft
 
-"@linkdlab/funcnodes_react_flow@npm:^2.2.0":
-  version: 2.2.0
-  resolution: "@linkdlab/funcnodes_react_flow@npm:2.2.0"
+"@linkdlab/funcnodes_react_flow@npm:^2.2.1-a0":
+  version: 2.2.1-a0
+  resolution: "@linkdlab/funcnodes_react_flow@npm:2.2.1-a0"
   dependencies:
     "@emotion/react": "npm:^11.14.0"
     "@emotion/styled": "npm:^11.14.1"
@@ -743,7 +743,7 @@ __metadata:
   peerDependencies:
     react: ^19.0
     react-dom: ^19.0
-  checksum: 10c0/facc8b63a7ecdd2db8c099e6e5d48a4fe5f185a305bf9189ea9830b75bdaea0d8e1e8cc45d138df19a92895f499a610b6e574746336c46c73ce8097f2f2aa483
+  checksum: 10c0/05b4f6a329cc9ea2ebf3ff729422d131d3058b8ad63c5815dce19fc3e8c84e4fa32395bbc68d65f92e2f79de934c74614ab8cbf3aebaf9cfd7c07bfd56b5e9a1
   languageName: node
   linkType: hard
 
