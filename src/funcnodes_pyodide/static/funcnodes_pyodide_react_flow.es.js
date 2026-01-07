@@ -74951,9 +74951,9 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
       }), this.initPromise.then(async () => {
         if (n.restore_worker_state_on_load) {
           const o = typeof n.restore_worker_state_on_load == "string" ? n.restore_worker_state_on_load : this._storage_key();
-          await this.restore_worker_state(o) || await this.getSyncManager().stepwise_fullsync();
+          await this.restore_worker_state(o);
         }
-        n.post_worker_initialized && await n.post_worker_initialized(this);
+        await this.getSyncManager().stepwise_fullsync(), n.post_worker_initialized && await n.post_worker_initialized(this);
       });
     }
     async send(t) {
