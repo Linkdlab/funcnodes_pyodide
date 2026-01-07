@@ -18755,23 +18755,23 @@ export default theme;`;
       n === "padding" && "padding-right: ".concat(s, "px ").concat(r, ";")
     ].filter(Boolean).join(""), `
   }
-  
+
   .`).concat(Py, ` {
     right: `).concat(s, "px ").concat(r, `;
   }
-  
+
   .`).concat(Oy, ` {
     margin-right: `).concat(s, "px ").concat(r, `;
   }
-  
+
   .`).concat(Py, " .").concat(Py, ` {
     right: 0 `).concat(r, `;
   }
-  
+
   .`).concat(Oy, " .").concat(Oy, ` {
     margin-right: 0 `).concat(r, `;
   }
-  
+
   body[`).concat(td, `] {
     `).concat(QZ, ": ").concat(s, `px;
   }
@@ -73612,8 +73612,8 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
   }) => {
     const [t, n] = C.useState(!1), r = () => n(!t), o = 150, a = e.description.length > o ? e.description.substring(0, o) + "..." : e.description;
     return /* @__PURE__ */ S.jsxs("div", { className: "module-description", children: [
-      /* @__PURE__ */ S.jsx(HFe, { remarkPlugins: [rze], children: t ? e.description.replace(/\\n/g, `  
-`) : a.replace(/\\n/g, `  
+      /* @__PURE__ */ S.jsx(HFe, { remarkPlugins: [rze], children: t ? e.description.replace(/\\n/g, `
+`) : a.replace(/\\n/g, `
 `) }),
       e.description.length > o && /* @__PURE__ */ S.jsx("button", { onClick: r, className: "toggle-description", children: t ? "Show less" : "Show more" })
     ] });
