@@ -47,32 +47,6 @@
 
         const loadParam = getParam("load");
         const shouldPreload = typeof loadParam === "string" && loadParam.length > 0;
-        let exportStr = null;
-
-        if (shouldPreload) {
-          try {
-            const url = new URL(loadParam, window.location.href).toString();
-            console.log("preloading worker export from", url);
-            const resp = await fetch(url);
-            if (!resp.ok) {
-              console.error(
-                `Failed to load worker export (${resp.status}) from ${url}`
-              );
-            } else {
-              const buf = await resp.arrayBuffer();
-              const bytes = new Uint8Array(buf);
-              const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b; // "PK"
-
-              exportStr = isZip
-                ? arrayBufferToBase64(buf)
-                : new TextDecoder().decode(bytes).trim();
-
-              console.log("worker export loaded (chars)", exportStr.length);
-            }
-          } catch (e) {
-            console.error("Failed to preload worker export from URL", e);
-          }
-        }
 
         window.FuncNodes.FuncnodesPyodide("root",{
           packages:[],
