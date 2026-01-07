@@ -36,7 +36,7 @@ jobs:
       # Install dependencies in the src/react directory (workspace root).
       - name: Install dependencies
         working-directory: src/react
-        run: yarn install
+        run: yarn install --immutable
 
       # Run the build script in the src/react directory (workspace root).
       - name: Build project
