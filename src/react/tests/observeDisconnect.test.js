@@ -39,4 +39,3 @@ test("observeDisconnectByPolling stop prevents callback", async () => {
   await sleep(150);
   assert.equal(calls, 0);
 });
-

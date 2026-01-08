@@ -26,4 +26,3 @@ test("mount registry unregister removes handle", () => {
   unregister();
   assert.equal(reg.get("root"), undefined);
 });
-

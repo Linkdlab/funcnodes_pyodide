@@ -18780,23 +18780,23 @@ var See = function() {
     n === "padding" && "padding-right: ".concat(c, "px ").concat(r, ";")
   ].filter(Boolean).join(""), `
   }
-  
+
   .`).concat(wk, ` {
     right: `).concat(c, "px ").concat(r, `;
   }
-  
+
   .`).concat(xk, ` {
     margin-right: `).concat(c, "px ").concat(r, `;
   }
-  
+
   .`).concat(wk, " .").concat(wk, ` {
     right: 0 `).concat(r, `;
   }
-  
+
   .`).concat(xk, " .").concat(xk, ` {
     margin-right: 0 `).concat(r, `;
   }
-  
+
   body[`).concat(wh, `] {
     `).concat(cee, ": ").concat(c, `px;
   }
@@ -73637,8 +73637,8 @@ const uj = ({
 }) => {
   const [t, n] = M.useState(!1), r = () => n(!t), a = 150, s = e.description.length > a ? e.description.substring(0, a) + "..." : e.description;
   return /* @__PURE__ */ E.jsxs("div", { className: "module-description", children: [
-    /* @__PURE__ */ E.jsx(nIe, { remarkPlugins: [h1e], children: t ? e.description.replace(/\\n/g, `  
-`) : s.replace(/\\n/g, `  
+    /* @__PURE__ */ E.jsx(nIe, { remarkPlugins: [h1e], children: t ? e.description.replace(/\\n/g, `
+`) : s.replace(/\\n/g, `
 `) }),
     e.description.length > a && /* @__PURE__ */ E.jsx("button", { onClick: r, className: "toggle-description", children: t ? "Show less" : "Show more" })
   ] });

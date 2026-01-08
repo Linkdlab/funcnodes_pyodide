@@ -24,4 +24,3 @@ export const observeDisconnectByPolling = (
     clearInterval(handle);
   };
 };
-
