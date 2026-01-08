@@ -9,6 +9,21 @@ export type WorkerFactoryProps = {
   };
 };
 
+export const shouldPreferInlineWorkers = ({
+  pageOrigin,
+  scriptUrl,
+}: {
+  pageOrigin: string | undefined;
+  scriptUrl: string | undefined;
+}): boolean => {
+  if (!pageOrigin || !scriptUrl) return false;
+  try {
+    return new URL(scriptUrl).origin !== pageOrigin;
+  } catch {
+    return false;
+  }
+};
+
 const hasUrlObjectUrls = (): boolean =>
   typeof URL !== "undefined" &&
   typeof (URL as any).createObjectURL === "function" &&
