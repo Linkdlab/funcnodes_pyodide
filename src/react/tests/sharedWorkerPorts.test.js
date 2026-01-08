@@ -35,4 +35,3 @@ test("shared worker port registry disconnect is safe for unknown ports", () => {
   assert.equal(reg.size(), 0);
   assert.equal(closed, 0);
 });
-
