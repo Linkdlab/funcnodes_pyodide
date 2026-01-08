@@ -29,4 +29,3 @@ test("shouldPreferInlineWorkers returns false when origins cannot be computed", 
     false
   );
 });
-
