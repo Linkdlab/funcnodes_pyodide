@@ -18780,23 +18780,23 @@ var Mee = function() {
     n === "padding" && "padding-right: ".concat(c, "px ").concat(r, ";")
   ].filter(Boolean).join(""), `
   }
-  
+
   .`).concat(x0, ` {
     right: `).concat(c, "px ").concat(r, `;
   }
-  
+
   .`).concat(S0, ` {
     margin-right: `).concat(c, "px ").concat(r, `;
   }
-  
+
   .`).concat(x0, " .").concat(x0, ` {
     right: 0 `).concat(r, `;
   }
-  
+
   .`).concat(S0, " .").concat(S0, ` {
     margin-right: 0 `).concat(r, `;
   }
-  
+
   body[`).concat(wh, `] {
     `).concat(gee, ": ").concat(c, `px;
   }
@@ -73637,8 +73637,8 @@ const cj = ({
 }) => {
   const [t, n] = M.useState(!1), r = () => n(!t), a = 150, s = e.description.length > a ? e.description.substring(0, a) + "..." : e.description;
   return /* @__PURE__ */ E.jsxs("div", { className: "module-description", children: [
-    /* @__PURE__ */ E.jsx(lIe, { remarkPlugins: [x1e], children: t ? e.description.replace(/\\n/g, `  
-`) : s.replace(/\\n/g, `  
+    /* @__PURE__ */ E.jsx(lIe, { remarkPlugins: [x1e], children: t ? e.description.replace(/\\n/g, `
+`) : s.replace(/\\n/g, `
 `) }),
     e.description.length > a && /* @__PURE__ */ E.jsx("button", { onClick: r, className: "toggle-description", children: t ? "Show less" : "Show more" })
   ] });
@@ -75032,7 +75032,7 @@ const Q1e = ({
       } catch {
         return h0(
           (a) => new SharedWorker(a, { name: t, type: "module" }),
-          new URL("data:video/mp2t;base64,aW1wb3J0IHsgaW5pdFNoYXJlZFdvcmtlciB9IGZyb20gIi4vcHlvZGlkZVdlYldvcmtlci5tanMiOw0KaW5pdFNoYXJlZFdvcmtlcih7fSk7DQo=", import.meta.url).href
+          new URL("data:video/mp2t;base64,aW1wb3J0IHsgaW5pdFNoYXJlZFdvcmtlciB9IGZyb20gIi4vcHlvZGlkZVdlYldvcmtlci5tanMiOwppbml0U2hhcmVkV29ya2VyKHt9KTsK", import.meta.url).href
         );
       }
     }
@@ -75064,7 +75064,7 @@ const Q1e = ({
     } catch {
       return h0(
         (a) => new Worker(a, { name: t, type: "module" }),
-        new URL("data:video/mp2t;base64,aW1wb3J0IHsgaW5pdERlZGljYXRlZFdvcmtlciB9IGZyb20gIi4vcHlvZGlkZVdlYldvcmtlci5tanMiOw0KaW5pdERlZGljYXRlZFdvcmtlcih7fSk7DQo=", import.meta.url).href
+        new URL("data:video/mp2t;base64,aW1wb3J0IHsgaW5pdERlZGljYXRlZFdvcmtlciB9IGZyb20gIi4vcHlvZGlkZVdlYldvcmtlci5tanMiOwppbml0RGVkaWNhdGVkV29ya2VyKHt9KTsK", import.meta.url).href
       );
     }
   }
@@ -75113,7 +75113,7 @@ const t9e = (e) => {
     pageOrigin: typeof window < "u" && window.location ? window.location.origin : void 0,
     scriptUrl: typeof import.meta < "u" ? import.meta.url : void 0
   });
-  if (console.log("preferInline", r), n) {
+  if (n) {
     if (typeof SharedWorker > "u")
       throw new Error(
         "SharedWorker is not available; provide worker, worker_url or worker_classes.Shared"
@@ -75138,17 +75138,14 @@ const t9e = (e) => {
     );
   if (r) return new p1({ name: t });
   try {
-    return new Worker(
-      new URL(
-        /* @vite-ignore */
-        "" + new URL("assets/pyodideDedicatedWorker-Bge9R9PO.js", import.meta.url).href,
-        import.meta.url
-      ),
-      {
-        name: t,
-        type: "module"
-      }
-    );
+    return new Worker(new URL(
+      /* @vite-ignore */
+      "" + new URL("assets/pyodideDedicatedWorker-Bge9R9PO.js", import.meta.url).href,
+      import.meta.url
+    ), {
+      name: t,
+      type: "module"
+    });
   } catch {
     return new p1({ name: t });
   }

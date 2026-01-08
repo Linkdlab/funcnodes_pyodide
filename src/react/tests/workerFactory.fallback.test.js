@@ -114,4 +114,3 @@ test("createWorkerFromData falls back to module blob when SharedWorker() throws"
     globalThis.URL = originalURL;
   }
 });
-
