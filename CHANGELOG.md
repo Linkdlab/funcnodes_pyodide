@@ -1,3 +1,11 @@
+## 2.0.1a0 (2026-01-08)
+
+### Fix
+
+- **react**: prefer inline workers on cross-origin pages
+- **react**: fall back to inline workers on cross-origin failure
+- **react**: dispose pyodide workers on unmount
+
 ## 2.0.0 (2026-01-07)
 
 ### BREAKING CHANGE
