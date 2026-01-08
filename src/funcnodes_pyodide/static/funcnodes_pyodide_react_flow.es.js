@@ -75113,7 +75113,7 @@ const t9e = (e) => {
     pageOrigin: typeof window < "u" && window.location ? window.location.origin : void 0,
     scriptUrl: typeof import.meta < "u" ? import.meta.url : void 0
   });
-  if (n) {
+  if (console.log("preferInline", r), n) {
     if (typeof SharedWorker > "u")
       throw new Error(
         "SharedWorker is not available; provide worker, worker_url or worker_classes.Shared"
@@ -75138,14 +75138,17 @@ const t9e = (e) => {
     );
   if (r) return new p1({ name: t });
   try {
-    return new Worker(new URL(
-      /* @vite-ignore */
-      "" + new URL("assets/pyodideDedicatedWorker-Bge9R9PO.js", import.meta.url).href,
-      import.meta.url
-    ), {
-      name: t,
-      type: "module"
-    });
+    return new Worker(
+      new URL(
+        /* @vite-ignore */
+        "" + new URL("assets/pyodideDedicatedWorker-Bge9R9PO.js", import.meta.url).href,
+        import.meta.url
+      ),
+      {
+        name: t,
+        type: "module"
+      }
+    );
   } catch {
     return new p1({ name: t });
   }
