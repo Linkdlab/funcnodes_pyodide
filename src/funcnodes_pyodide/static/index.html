@@ -49,7 +49,7 @@
         const loadParam = getParam("load");
         const shouldPreload = typeof loadParam === "string" && loadParam.length > 0;
 
-        window.FuncNodes.FuncnodesPyodide("root",{
+        window.__funcnodes_pyodide_handle = window.FuncNodes.FuncnodesPyodide("root",{
           packages:[],
           restore_worker_state_on_load:!shouldPreload,
         },{
@@ -58,7 +58,10 @@
 
       window.addEventListener("beforeunload", function() {
         try {
-          fnrf_zst?.root?.worker?.save_worker_state?.();
+          window.__funcnodes_pyodide_handle?.worker?.save_worker_state?.();
+        } catch {}
+        try {
+          window.__funcnodes_pyodide_handle?.dispose?.();
         } catch {}
       });
       }

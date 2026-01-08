@@ -2,6 +2,7 @@ import gself, {
   workerStateType,
   PyodideLogicGlobals,
 } from "./pyodideWorkerLogic.mjs";
+import { createSharedWorkerPortRegistry } from "./sharedWorkerPorts";
 
 interface CommonWorkerLayout extends PyodideLogicGlobals {
   general_initalization: (p: FullInitParams) => void;
@@ -79,16 +80,37 @@ globaleSlfDedicated.init_dedicated_worker = (
 globaleSlfShared.init_shared_worker = (params: SharedWorkerInitParams) => {
   const globaleSlf = gself as unknown as ExtendetSharedWorkerGlobalScope;
 
+  const ports = createSharedWorkerPortRegistry(() => {
+    try {
+      // Close the shared worker once no clients are connected.
+      (globaleSlf as unknown as SharedWorkerGlobalScope).close();
+    } catch {}
+  });
   globaleSlf.connectedPorts = [];
 
   globaleSlf.onconnect = (event) => {
     const port = event.ports[0];
     globaleSlf.connectedPorts.push(port);
+    ports.add(port);
     port.start();
     console.debug("Port connected in shared worker");
 
     port.onmessage = async (event) => {
       const message = event.data;
+      if (message?.cmd === "disconnect") {
+        ports.disconnect(port);
+        globaleSlf.connectedPorts = globaleSlf.connectedPorts.filter(
+          (p) => p !== port
+        );
+        // Best-effort cleanup: clear handler; closing is optional in spec but supported.
+        try {
+          port.onmessage = null;
+        } catch {}
+        try {
+          port.close();
+        } catch {}
+        return;
+      }
       const response = await globaleSlf.handleMessage(message);
       port.postMessage(response);
     };
@@ -101,13 +123,13 @@ globaleSlfShared.init_shared_worker = (params: SharedWorkerInitParams) => {
     ...params,
     receivepy: (msg: any, worker_id: string) => {
       // Broadcast the message to every connected port
-      globaleSlf.connectedPorts.forEach((port) => {
+      ports.forEach((port) => {
         port.postMessage({ cmd: "receive", msg, worker_id: worker_id });
       });
     },
     receivepy_bytes(msg: Uint8Array, worker_id: string) {
       // Broadcast the message to every connected port
-      globaleSlf.connectedPorts.forEach((port) => {
+      ports.forEach((port) => {
         port.postMessage({
           cmd: "receive_bytes",
           msg: msg,

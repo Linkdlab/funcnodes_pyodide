@@ -1,9 +1,13 @@
 import { FuncNodesWorker, WorkerProps } from "@linkdlab/funcnodes_react_flow";
 import { v4 as uuidv4 } from "uuid";
-import { WorkerSendMessage } from "./pyodideWorkerLogic.mjs";
+import { WorkerLifecycle } from "./workerLifecycle";
+import { createWorkerFromData } from "./workerFactory.browser";
 
-import pyodideDedicatedWorker from "./pyodideDedicatedWorker.mts?worker&inline";
-import pyodideSharedWorker from "./pyodideSharedWorker.mts?sharedworker&inline";
+type WorkerSendMessage = {
+  cmd: "worker:send";
+  msg: string;
+  worker_id: string;
+};
 
 export interface FuncnodesPyodideWorkerProps extends Partial<WorkerProps> {
   debug?: boolean;
@@ -52,39 +56,14 @@ const normalizePackageSpecs = (
 export const worker_from_data = (
   data: FuncnodesPyodideWorkerProps
 ): Worker | SharedWorker => {
-  if (data.worker) return data.worker;
-
-  if (!data.worker_classes)
-    data.worker_classes = {
-      Shared: pyodideSharedWorker,
-      Dedicated: pyodideDedicatedWorker,
-    };
-
-  if (data.shared_worker) {
-    if (data.worker_url === undefined) {
-      data.worker = new data.worker_classes.Shared({
-        name: data.uuid,
-      });
-    } else {
-      data.worker = new SharedWorker(data.worker_url, {
-        name: data.uuid,
-        type: "module",
-      });
-    }
-  } else {
-    if (data.worker_url === undefined) {
-      data.worker = new data.worker_classes.Dedicated({
-        name: data.uuid,
-      });
-    } else {
-      data.worker = new Worker(data.worker_url, {
-        name: data.uuid,
-        type: "module",
-      });
-    }
-  }
-
-  return data.worker;
+  data.worker = createWorkerFromData({
+    uuid: data.uuid,
+    shared_worker: data.shared_worker,
+    worker_url: data.worker_url,
+    worker: data.worker,
+    worker_classes: data.worker_classes,
+  });
+  return data.worker as any;
 };
 
 class FuncnodesPyodideWorker extends FuncNodesWorker {
@@ -95,8 +74,9 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
     msg: string;
     progress: number;
   };
-  _port: MessagePort | undefined;
   _message_hooks: ((data: any) => Promise<void>)[] = [];
+  private _disposed = false;
+  private _lifecycle: WorkerLifecycle;
   constructor(_data: FuncnodesPyodideWorkerProps) {
     const data: FuncnodesPyodideWorkerProps & WorkerProps = {
       uuid: uuidv4(),
@@ -105,17 +85,10 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
     super(data);
 
     this._worker = worker_from_data(data);
-    if (this._worker instanceof SharedWorker) {
-      data.shared_worker = true;
-      this._port = this._worker.port;
-      this._port.start(); // Ensure the port is active
-      this._port.addEventListener("message", this.onmessage.bind(this));
-    } else if (this._worker instanceof Worker) {
-      data.shared_worker = false;
-      this._worker.addEventListener("message", this.onmessage.bind(this));
-    } else {
-      throw new Error("worker must be an instance of Worker or SharedWorker");
-    }
+    this._lifecycle = new WorkerLifecycle(this._worker as any, {
+      worker_id: this.uuid,
+      onMessage: this.onmessage.bind(this),
+    });
 
     this.postMessage({
       cmd: "init",
@@ -126,13 +99,11 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
       },
     });
 
-    const state_interval = setInterval(() => {
-      this.postMessage({ cmd: "state" });
-    }, 400);
+    this._lifecycle.startStatePolling();
 
     this._workerstate = { loaded: false, msg: "loading", progress: 0 };
     this.initPromise = new Promise<void>(async (resolve) => {
-      while (!this._workerstate.loaded) {
+      while (!this._workerstate.loaded && !this._disposed) {
         this._zustand?.set_progress({
           message: this._workerstate.msg,
           status: "info",
@@ -142,13 +113,16 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
 
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      clearInterval(state_interval);
-      this.is_open = true;
-      this._zustand?.auto_progress();
+      this._lifecycle.stopPolling();
+      if (!this._disposed) {
+        this.is_open = true;
+        this._zustand?.auto_progress();
+      }
       resolve();
     });
 
     this.initPromise.then(async () => {
+      if (this._disposed) return;
       if (data.restore_worker_state_on_load) {
         const key =
           typeof data.restore_worker_state_on_load === "string"
@@ -176,13 +150,14 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
   }
 
   postMessage(data: any) {
-    data.worker_id = this.uuid;
+    this._lifecycle.postMessage(data);
+  }
 
-    if (this._port) {
-      this._port.postMessage(data);
-    } else {
-      (this._worker as Worker).postMessage(data);
-    }
+  dispose() {
+    if (this._disposed) return;
+    this._disposed = true;
+    this.is_open = false;
+    this._lifecycle.dispose();
   }
 
   registerMessageHook(hook: (data: any) => Promise<void>): () => void {
@@ -195,6 +170,7 @@ class FuncnodesPyodideWorker extends FuncNodesWorker {
   }
 
   onmessage(event: MessageEvent) {
+    if (this._disposed) return;
     for (const hook of this._message_hooks) {
       hook(event.data);
     }

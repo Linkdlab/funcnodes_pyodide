@@ -1,6 +1,6 @@
 {
   "name": "@linkdlab/funcnodes_pyodide_react_flow",
-  "version": "2.0.0",
+  "version": "2.0.1a0",
   "description": "Frontend with React Flow for FuncNodes",
   "repository": {
     "type": "git",
@@ -43,7 +43,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --test",
+    "test": "node --test --experimental-strip-types",
     "build": "vite build --config vite.browser.config.js && vite build && vite build --config vite.worker.config.js",
     "watch": "vite --config vite.browser.config.js",
     "preview": "vite build --config vite.browser.config.js && vite preview --config vite.browser.config.js"
