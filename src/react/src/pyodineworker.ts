@@ -1,6 +1,7 @@
 import { FuncNodesWorker, WorkerProps } from "@linkdlab/funcnodes_react_flow";
 import { v4 as uuidv4 } from "uuid";
 import { WorkerLifecycle } from "./workerLifecycle";
+import { createWorkerFromData } from "./workerFactory.browser";
 
 type WorkerSendMessage = {
   cmd: "worker:send";
@@ -55,73 +56,14 @@ const normalizePackageSpecs = (
 export const worker_from_data = (
   data: FuncnodesPyodideWorkerProps
 ): Worker | SharedWorker => {
-  if (data.worker) return data.worker;
-
-  if (data.shared_worker) {
-    if (data.worker_url === undefined) {
-      if (data.worker_classes?.Shared) {
-        data.worker = new data.worker_classes.Shared({
-          name: data.uuid,
-        });
-      } else {
-        if (typeof SharedWorker === "undefined") {
-          throw new Error(
-            "SharedWorker is not available; provide worker, worker_url or worker_classes.Shared"
-          );
-        }
-        data.worker = new SharedWorker(
-          new URL("./pyodideSharedWorker.mts", import.meta.url),
-          {
-            name: data.uuid,
-            type: "module",
-          }
-        );
-      }
-    } else {
-      if (typeof SharedWorker === "undefined") {
-        throw new Error(
-          "SharedWorker is not available; provide worker or set shared_worker=false"
-        );
-      }
-      data.worker = new SharedWorker(data.worker_url, {
-        name: data.uuid,
-        type: "module",
-      });
-    }
-  } else {
-    if (data.worker_url === undefined) {
-      if (data.worker_classes?.Dedicated) {
-        data.worker = new data.worker_classes.Dedicated({
-          name: data.uuid,
-        });
-      } else {
-        if (typeof Worker === "undefined") {
-          throw new Error(
-            "Worker is not available; provide worker, worker_url or worker_classes.Dedicated"
-          );
-        }
-        data.worker = new Worker(
-          new URL("./pyodideDedicatedWorker.mts", import.meta.url),
-          {
-            name: data.uuid,
-            type: "module",
-          }
-        );
-      }
-    } else {
-      if (typeof Worker === "undefined") {
-        throw new Error(
-          "Worker is not available; provide worker or set shared_worker=true"
-        );
-      }
-      data.worker = new Worker(data.worker_url, {
-        name: data.uuid,
-        type: "module",
-      });
-    }
-  }
-
-  return data.worker;
+  data.worker = createWorkerFromData({
+    uuid: data.uuid,
+    shared_worker: data.shared_worker,
+    worker_url: data.worker_url,
+    worker: data.worker,
+    worker_classes: data.worker_classes,
+  });
+  return data.worker as any;
 };
 
 class FuncnodesPyodideWorker extends FuncNodesWorker {
